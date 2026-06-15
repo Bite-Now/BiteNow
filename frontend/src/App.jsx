@@ -7,6 +7,7 @@ import Canteen from './pages/Canteen';
 import Cart from './pages/Cart';
 import Orders from './pages/Orders';
 import OrderHistory from './pages/OrderHistory';
+import Surprise from './pages/Surprise';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
 
@@ -26,6 +27,7 @@ function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/history" element={<OrderHistory />} />
+          <Route path="/surprise" element={<Surprise />} />
         </Route>
         
         {/* Catch all unknown routes */}

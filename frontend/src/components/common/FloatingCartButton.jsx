@@ -13,7 +13,7 @@ const FloatingCartButton = () => {
     return (
         <div 
             className={`absolute bottom-28 right-6 z-50 transition-all duration-300 ease-in-out ${
-                totalItems > 0 && location.pathname !== '/cart'
+                totalItems > 0 && location.pathname !== '/cart' && location.pathname !== '/surprise'
                     ? 'opacity-100 translate-y-0 scale-100' 
                     : 'opacity-0 translate-y-8 scale-90 pointer-events-none'
             }`}
