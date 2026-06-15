@@ -1,15 +1,37 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import SignUp from './pages/SignUp';
+import Home from './pages/Home';
+import Canteen from './pages/Canteen';
+import Cart from './pages/Cart';
+import Orders from './pages/Orders';
+import OrderHistory from './pages/OrderHistory';
+import ProtectedRoute from './components/ProtectedRoute';
+import MainLayout from './components/layout/MainLayout';
 
 function App() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center p-8 bg-gray-800 rounded-xl shadow-lg border border-gray-700">
-        <h1 className="text-4xl font-bold text-[#FF9F43] mb-4">BiteNow Frontend</h1>
-        <p className="text-gray-400 mb-6">
-          React + Vite + Tailwind + Supabase architecture successfully provisioned.
-        </p>
-      </div>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/canteen/:id" element={<Canteen />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/history" element={<OrderHistory />} />
+        </Route>
+        
+        {/* Catch all unknown routes */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
