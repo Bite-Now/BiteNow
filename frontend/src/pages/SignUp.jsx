@@ -10,7 +10,7 @@ const SignUp = () => {
                     routing="path" 
                     path="/signup" 
                     signInUrl="/login" 
-                    fallbackRedirectUrl="/home"
+                    fallbackRedirectUrl="/"
                 />
                 
                 {/* Vendor Link preserved outside the Clerk component */}

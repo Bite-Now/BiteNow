@@ -9,7 +9,7 @@ const Login = () => {
                     routing="path" 
                     path="/login" 
                     signUpUrl="/signup" 
-                    fallbackRedirectUrl="/home"
+                    fallbackRedirectUrl="/"
                 />
             </div>
         </div>
