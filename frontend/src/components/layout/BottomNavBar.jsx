@@ -1,37 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useScrollDirection } from '../../hooks/useScrollDirection';
+import { useVendorStore } from '../../store/useVendorStore';
 
-const NAV_ITEMS = [
+const STUDENT_NAV_ITEMS = [
     { icon: 'home', id: 'home', path: '/home' },
     { icon: 'receipt_long', id: 'orders', path: '/orders' },
     { icon: 'restaurant', id: 'surprise', path: '/surprise' },
     { icon: 'account_balance_wallet', id: 'budget', path: '/budget' }
 ];
 
-const MAIN_TAB_PATHS = NAV_ITEMS.map(item => item.path);
+const VENDOR_NAV_ITEMS = [
+    { icon: 'home', id: 'vendor_dashboard', path: '/vendor/dashboard' },
+    { icon: 'receipt_long', id: 'vendor_orders', path: '/vendor/orders' },
+    { icon: 'inventory_2', id: 'vendor_products', path: '/vendor/products' },
+    { icon: 'account_balance_wallet', id: 'vendor_earnings', path: '/vendor/earnings' },
+    { icon: 'group', id: 'vendor_staff', path: '/vendor/staff' }
+];
 
 const BottomNavBar = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const scrollDirection = useScrollDirection();
+    const isVendorMode = useVendorStore(state => state.isVendorMode);
+    
+    const currentNavItems = isVendorMode ? VENDOR_NAV_ITEMS : STUDENT_NAV_ITEMS;
+    const mainTabPaths = currentNavItems.map(item => item.path);
     
     // Spotlight memory state
     const [activeTab, setActiveTab] = useState(0);
 
     // Determine if the navbar should be visible
     // It's visible if we are on a main tab AND the user hasn't scrolled down.
-    const isMainTab = MAIN_TAB_PATHS.includes(location.pathname);
+    const isMainTab = mainTabPaths.includes(location.pathname);
     const showNavBar = isMainTab && scrollDirection !== 'down';
 
     useEffect(() => {
         // Only update activeTab if we are navigating to a main tab.
         // This ensures the spotlight stays in place when hiding.
-        const index = NAV_ITEMS.findIndex(item => item.path === location.pathname);
+        const index = currentNavItems.findIndex(item => item.path === location.pathname);
         if (index !== -1) {
             setActiveTab(index);
         }
-    }, [location.pathname]);
+    }, [location.pathname, currentNavItems]);
+
+    const itemWidthPercent = 100 / currentNavItems.length;
 
     return (
         <nav 
@@ -43,20 +56,21 @@ const BottomNavBar = () => {
             <div
                 className="absolute top-0 h-[3px] bg-white rounded-b-md shadow-[0_2px_8px_rgba(255,255,255,0.8)] transition-all duration-300 ease-out z-10"
                 style={{
-                    left: `calc(${activeTab * 25}% + 12.5% - 16px)`,
+                    left: `calc(${activeTab * itemWidthPercent}% + ${itemWidthPercent / 2}% - 16px)`,
                     width: '32px'
                 }}
             >
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[60px] h-[40px] bg-gradient-to-b from-white/20 to-transparent pointer-events-none" style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}></div>
             </div>
 
-            {NAV_ITEMS.map((item, index) => {
+            {currentNavItems.map((item, index) => {
                 const isActive = activeTab === index;
                 return (
                     <button
                         key={item.id}
                         onClick={() => navigate(item.path)}
-                        className={`flex flex-col items-center justify-center w-[25%] transition-all duration-300 z-20 ${isActive && showNavBar ? 'text-white' : 'text-white/40 hover:text-white/60'}`}
+                        className={`flex flex-col items-center justify-center transition-all duration-300 z-20 ${isActive && showNavBar ? 'text-white' : 'text-white/40 hover:text-white/60'}`}
+                        style={{ width: `${itemWidthPercent}%` }}
                     >
                         <span className="material-symbols-outlined text-[28px]">{item.icon}</span>
                     </button>

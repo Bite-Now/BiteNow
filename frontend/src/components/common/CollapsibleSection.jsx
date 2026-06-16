@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const CollapsibleSection = ({ 
     title, 
     icon, 
+    headerRight,
     children, 
     defaultOpen = false,
     className = "" 
@@ -23,6 +24,11 @@ const CollapsibleSection = ({
                         </span>
                     )}
                     <h3 className="font-headline-sm text-on-surface font-semibold m-0">{title}</h3>
+                    {headerRight && (
+                        <div className="ml-1 flex items-center" onClick={(e) => e.stopPropagation()}>
+                            {headerRight}
+                        </div>
+                    )}
                 </div>
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container-highest/50">
                     <span 
