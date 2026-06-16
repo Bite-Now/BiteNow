@@ -1,0 +1,29 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.modules.auth.router import router as auth_router
+from app.modules.vendor.router import router as vendor_router
+from app.modules.owner.router import router as owner_router
+from app.modules.admin.router import router as admin_router
+from app.modules.webhooks.router import router as webhook_router
+
+app = FastAPI(title="BiteNow API")
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(auth_router)
+app.include_router(vendor_router)
+app.include_router(owner_router)
+app.include_router(admin_router)
+app.include_router(webhook_router)
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to BiteNow API"}
