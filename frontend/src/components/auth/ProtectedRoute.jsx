@@ -1,11 +1,11 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useCurrentRole } from '../../hooks/useCurrentRole';
+import { useAuth } from '../../hooks/useAuth';
 
 export function ProtectedRoute({ allowedRoles, children }) {
-  const { role, isLoaded, isSignedIn } = useCurrentRole();
+  const { role, loading, isAuthenticated } = useAuth();
 
-  if (!isLoaded) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -13,7 +13,7 @@ export function ProtectedRoute({ allowedRoles, children }) {
     );
   }
 
-  if (!isSignedIn) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 

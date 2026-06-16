@@ -1,15 +1,15 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCurrentRole } from '../../hooks/useCurrentRole';
+import { useAuth } from '../../hooks/useAuth';
 
 export function RoleRedirect() {
-  const { role, isLoaded, isSignedIn } = useCurrentRole();
+  const { role, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (loading) return;
 
-    if (!isSignedIn) {
+    if (!isAuthenticated) {
       navigate('/login', { replace: true });
       return;
     }
@@ -25,7 +25,7 @@ export function RoleRedirect() {
     } else {
       navigate('/unauthorized', { replace: true });
     }
-  }, [role, isLoaded, isSignedIn, navigate]);
+  }, [role, loading, isAuthenticated, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background text-on-surface">
