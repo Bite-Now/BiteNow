@@ -120,24 +120,15 @@ const SignUp = () => {
                         </button>
                     </div>
 
-                    {/* Vendor Checkbox */}
-                    <div className="flex items-center py-2">
-                        <label className="flex items-center cursor-pointer group">
-                            <div className="relative flex items-center justify-center w-5 h-5 mr-3 border border-white/20 rounded-[4px] bg-transparent group-hover:border-[#E89D66]/50 transition-colors">
-                                <input 
-                                    type="checkbox" 
-                                    className="peer opacity-0 absolute w-full h-full cursor-pointer"
-                                    checked={isVendor}
-                                    onChange={(e) => setIsVendor(e.target.checked)}
-                                />
-                                {isVendor && (
-                                    <svg className="w-3.5 h-3.5 text-[#E89D66] pointer-events-none" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M11.6666 3.5L5.24992 9.91667L2.33325 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    </svg>
-                                )}
-                            </div>
-                            <span className="text-[14px] text-white/80 select-none">Request to join as a vendor</span>
-                        </label>
+                    {/* Vendor Link */}
+                    <div className="flex items-center justify-center py-2">
+                        <button 
+                            type="button"
+                            onClick={() => setIsVendor(!isVendor)} // Or open a modal here
+                            className="text-[14px] text-[#3B82F6] hover:text-[#60A5FA] font-medium hover:underline transition-colors focus:outline-none"
+                        >
+                            Request to join as a vendor
+                        </button>
                     </div>
 
                     {/* Sign Up Button */}
