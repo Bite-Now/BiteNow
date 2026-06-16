@@ -28,8 +28,13 @@ async def get_current_user(
     clerk_id: str = Depends(get_current_user_clerk_id),
     db: AsyncSession = Depends(get_db)
 ) -> User:
-    result = await db.execute(select(User).where(User.clerk_user_id == clerk_id))
-    user = result.scalars().first()
+    import sqlalchemy.exc
+    try:
+        result = await db.execute(select(User).where(User.clerk_user_id == clerk_id))
+        user = result.scalars().first()
+    except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.OperationalError) as e:
+        print(f"[ERROR] Database error in get_current_user: {e}")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database schema unavailable or connection failed")
     
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found in database")

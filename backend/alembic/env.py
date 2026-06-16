@@ -33,7 +33,8 @@ from dotenv import load_dotenv
 load_dotenv()
 database_url = os.getenv("DATABASE_URL")
 if database_url:
-    config.set_main_option("sqlalchemy.url", database_url.replace("postgres://", "postgresql+asyncpg://").replace("postgresql://", "postgresql+asyncpg://"))
+    escaped_url = database_url.replace("postgres://", "postgresql+asyncpg://").replace("postgresql://", "postgresql+asyncpg://").replace("%", "%%")
+    config.set_main_option("sqlalchemy.url", escaped_url)
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -76,6 +77,7 @@ async def run_async_migrations() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args={"statement_cache_size": 0}
     )
 
     async with connectable.connect() as connection:

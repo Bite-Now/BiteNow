@@ -6,3 +6,5 @@
 co
 openspec
 .agent
+__pycache__/
+*.pyc

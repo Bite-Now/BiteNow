@@ -33,7 +33,7 @@ function App() {
 
         {/* Protected Routes - STUDENT */}
         <Route element={<ProtectedRoute allowedRoles={['STUDENT']}><MainLayout /></ProtectedRoute>}>
-          <Route path="/student" element={<Home />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/canteen/:id" element={<Canteen />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/orders" element={<Orders />} />
