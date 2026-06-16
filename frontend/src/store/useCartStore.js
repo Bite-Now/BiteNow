@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useWalletStore } from './useWalletStore';
 
 export const useCartStore = create((set, get) => ({
     items: [], // Array of { ...menuItem, quantity, canteenId }
@@ -37,5 +38,23 @@ export const useCartStore = create((set, get) => ({
 
     getTotalPrice: () => {
         return get().items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    },
+
+    checkout: () => {
+        const state = get();
+        if (state.items.length === 0) return false;
+        
+        const total = state.getTotalPrice();
+        const canteenId = state.items[0]?.canteenId || 'Mixed'; // Simplify for mock
+
+        const walletState = useWalletStore.getState();
+        
+        if (total > walletState.currentBalance) {
+            return false; // Insufficient funds
+        }
+        
+        walletState.processOrderDeduction(total, canteenId, 'Food Order');
+        state.clearCart();
+        return true;
     }
 }));

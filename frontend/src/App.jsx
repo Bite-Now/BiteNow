@@ -8,6 +8,7 @@ import Cart from './pages/Cart';
 import Orders from './pages/Orders';
 import OrderHistory from './pages/OrderHistory';
 import Surprise from './pages/Surprise';
+import Budget from './pages/Budget';
 import Unauthorized from './pages/Unauthorized';
 import MainLayout from './components/layout/MainLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -39,6 +40,7 @@ function App() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/history" element={<OrderHistory />} />
           <Route path="/surprise" element={<Surprise />} />
+          <Route path="/budget" element={<Budget />} />
         </Route>
 
         {/* Protected Routes - STAFF */}

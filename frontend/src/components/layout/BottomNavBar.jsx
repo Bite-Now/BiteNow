@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useScrollDirection } from '../../hooks/useScrollDirection';
 
 const NAV_ITEMS = [
     { icon: 'home', id: 'home', path: '/home' },
@@ -13,12 +14,15 @@ const MAIN_TAB_PATHS = NAV_ITEMS.map(item => item.path);
 const BottomNavBar = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const scrollDirection = useScrollDirection();
     
     // Spotlight memory state
     const [activeTab, setActiveTab] = useState(0);
 
     // Determine if the navbar should be visible
-    const showNavBar = MAIN_TAB_PATHS.includes(location.pathname);
+    // It's visible if we are on a main tab AND the user hasn't scrolled down.
+    const isMainTab = MAIN_TAB_PATHS.includes(location.pathname);
+    const showNavBar = isMainTab && scrollDirection !== 'down';
 
     useEffect(() => {
         // Only update activeTab if we are navigating to a main tab.
