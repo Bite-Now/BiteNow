@@ -25,7 +25,7 @@ const MainLayout = () => {
                     {isVendorMode ? 'Vendor View' : 'Student View'}
                 </button>
 
-                <main className="flex-1 overflow-y-auto no-scrollbar relative flex flex-col">
+                <main id="app-scroll-container" className="flex-1 overflow-y-auto no-scrollbar relative flex flex-col">
                     <Outlet />
                 </main>
                 <FloatingCartButton />
