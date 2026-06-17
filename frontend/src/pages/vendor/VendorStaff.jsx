@@ -5,7 +5,7 @@ const VendorStaff = () => {
     const [staff, setStaff] = useState(vendorStaff);
 
     return (
-        <div className="flex flex-col gap-6 w-full h-full pb-28 pt-6 px-4 overflow-y-auto no-scrollbar">
+        <div className="flex flex-col gap-6 w-full pb-32 pt-6 px-4 relative">
             
             {/* Header */}
             <div className="flex justify-between items-center">

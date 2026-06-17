@@ -37,7 +37,7 @@ export function RoleRedirect() {
     if (role === 'STUDENT') {
       navigate('/home', { replace: true });
     } else if (role === 'OWNER') {
-      navigate('/owner', { replace: true });
+      navigate('/vendor/dashboard', { replace: true });
     } else if (role === 'STAFF') {
       navigate('/staff', { replace: true });
     } else if (role === 'ADMIN') {

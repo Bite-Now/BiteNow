@@ -215,7 +215,7 @@ const VendorProducts = () => {
     };
 
     return (
-        <div className="flex flex-col gap-4 w-full h-full pb-28 pt-4 px-3 overflow-y-auto no-scrollbar bg-background">
+        <div className="flex flex-col gap-4 w-full pb-32 pt-4 px-3 relative bg-background">
             
             {/* Header */}
             <div className="flex justify-between items-center px-1 mt-2">
