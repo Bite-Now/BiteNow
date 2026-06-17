@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useScrollDirection } from '../../hooks/useScrollDirection';
-import { useVendorStore } from '../../store/useVendorStore';
+import { useAuth } from '../../hooks/useAuth';
 
 const STUDENT_NAV_ITEMS = [
     { icon: 'home', id: 'home', path: '/home' },
@@ -22,9 +22,9 @@ const BottomNavBar = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const scrollDirection = useScrollDirection();
-    const isVendorMode = useVendorStore(state => state.isVendorMode);
+    const { role } = useAuth();
     
-    const currentNavItems = isVendorMode ? VENDOR_NAV_ITEMS : STUDENT_NAV_ITEMS;
+    const currentNavItems = role === 'OWNER' ? VENDOR_NAV_ITEMS : STUDENT_NAV_ITEMS;
     const mainTabPaths = currentNavItems.map(item => item.path);
     
     // Spotlight memory state
