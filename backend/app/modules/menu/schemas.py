@@ -9,7 +9,6 @@ class CanteenResponse(BaseModel):
     name: str
     slug: str
     is_open: bool
-    batch_window_minutes: int
 
     model_config = ConfigDict(from_attributes=True)
 

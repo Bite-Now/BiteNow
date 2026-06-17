@@ -25,7 +25,6 @@ class Canteen(Base):
     name = Column(Text, nullable=False)
     slug = Column(Text, unique=True, nullable=False)
     is_active = Column(Boolean, default=True)
-    batch_window_minutes = Column(Integer, default=10)
     is_open = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

@@ -47,6 +47,7 @@ class MenuRepository:
         new_item = MenuItem(canteen_id=canteen_id, **data.model_dump())
         self.db.add(new_item)
         await self.db.flush()
+        await self.db.commit()
         await self.db.refresh(new_item)
         return new_item
 
@@ -55,17 +56,20 @@ class MenuRepository:
         for key, value in update_data.items():
             setattr(item, key, value)
         await self.db.flush()
+        await self.db.commit()
         await self.db.refresh(item)
         return item
 
     async def delete_menu_item(self, item: MenuItem) -> None:
         await self.db.delete(item)
         await self.db.flush()
+        await self.db.commit()
 
     async def create_daily_special(self, canteen_id: UUID, data: DailySpecialCreate) -> DailySpecial:
         new_special = DailySpecial(canteen_id=canteen_id, **data.model_dump())
         self.db.add(new_special)
         await self.db.flush()
+        await self.db.commit()
         await self.db.refresh(new_special)
         return new_special
 
@@ -74,9 +78,11 @@ class MenuRepository:
         for key, value in update_data.items():
             setattr(special, key, value)
         await self.db.flush()
+        await self.db.commit()
         await self.db.refresh(special)
         return special
 
     async def delete_daily_special(self, special: DailySpecial) -> None:
         await self.db.delete(special)
         await self.db.flush()
+        await self.db.commit()
