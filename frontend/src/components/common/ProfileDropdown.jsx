@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useClerk } from '@clerk/clerk-react';
 
 const ProfileDropdown = () => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
+    const { signOut } = useClerk();
 
     // Check system preference or localStorage for initial dark mode state
     const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -46,11 +48,11 @@ const ProfileDropdown = () => {
         localStorage.setItem('theme', newMode ? 'dark' : 'light');
     };
 
-    const handleAction = (action) => {
+    const handleAction = async (action) => {
         setIsOpen(false);
-        // Placeholder for actual navigation or logic
         switch (action) {
             case 'logout':
+                await signOut();
                 navigate('/');
                 break;
             default:
