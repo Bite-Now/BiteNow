@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { mockVendorProducts } from '../../data/mockVendorData';
+import React, { useState, useEffect } from 'react';
 import CollapsibleSection from '../../components/common/CollapsibleSection';
+import { useCurrentCanteen } from '../../hooks/useCurrentCanteen';
+import api from '../../services/api';
+
+const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80';
 
 // --- Add Product Modal ---
-const AddProductModal = ({ isOpen, onClose, onAdd, categoryId, categoryName }) => {
+const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting }) => {
     if (!isOpen) return null;
     
     const [name, setName] = useState('');
@@ -11,21 +14,24 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryId, categoryName }) =
     const [price, setPrice] = useState('');
     const [image, setImage] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!name || !price) return;
-
-        onAdd({
-            id: 'p' + Date.now(),
-            name,
-            description: desc || 'No description provided.',
-            price: price.startsWith('₹') ? price : `₹${price}`,
-            image: image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80', // Default food image
-            inStock: true
-        }, categoryId);
         
-        onClose();
-        setName(''); setDesc(''); setPrice(''); setImage('');
+        try {
+            await onAdd({
+                name,
+                description: desc || undefined,
+                price: parseFloat(price.replace('₹', '')),
+                image_url: image || undefined,
+                category: categoryName !== 'special' ? categoryName : undefined
+            });
+            
+            onClose();
+            setName(''); setDesc(''); setPrice(''); setImage('');
+        } catch (err) {
+            // Error handled in onAdd
+        }
     };
 
     return (
@@ -33,15 +39,14 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryId, categoryName }) =
             <div className="bg-surface-container rounded-2xl w-full max-w-md p-6 border border-outline-variant/20 shadow-xl">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-on-surface">
-                        Add to {categoryName || 'Menu'}
+                        Add to {categoryName === 'special' ? "Today's Special" : categoryName || 'Menu'}
                     </h2>
-                    <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface">
+                    <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface" disabled={isSubmitting}>
                         <span className="material-symbols-outlined">close</span>
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    {/* Image URL Mock */}
                     <div className="flex flex-col gap-1">
                         <label className="text-xs text-on-surface-variant font-medium ml-1">Image URL</label>
                         <input 
@@ -50,6 +55,7 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryId, categoryName }) =
                             placeholder="https://example.com/image.jpg"
                             value={image}
                             onChange={(e) => setImage(e.target.value)}
+                            disabled={isSubmitting}
                         />
                     </div>
                     
@@ -62,37 +68,43 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryId, categoryName }) =
                             placeholder="e.g. Garlic Naan"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
+                            disabled={isSubmitting}
                         />
                     </div>
 
                     <div className="flex flex-col gap-1">
                         <label className="text-xs text-on-surface-variant font-medium ml-1">Price *</label>
                         <input 
-                            type="text" 
+                            type="number" 
                             required
+                            min="1"
                             className="bg-surface border border-outline-variant/30 rounded-xl px-4 py-3 text-sm text-on-surface outline-none focus:border-primary"
                             placeholder="e.g. 50"
                             value={price}
                             onChange={(e) => setPrice(e.target.value)}
+                            disabled={isSubmitting}
                         />
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs text-on-surface-variant font-medium ml-1">Description</label>
-                        <textarea 
-                            className="bg-surface border border-outline-variant/30 rounded-xl px-4 py-3 text-sm text-on-surface outline-none focus:border-primary resize-none h-20"
-                            placeholder="Brief description of the item..."
-                            value={desc}
-                            onChange={(e) => setDesc(e.target.value)}
-                        />
-                    </div>
+                    {categoryName === 'special' && (
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs text-on-surface-variant font-medium ml-1">Description</label>
+                            <textarea 
+                                className="bg-surface border border-outline-variant/30 rounded-xl px-4 py-3 text-sm text-on-surface outline-none focus:border-primary resize-none h-20"
+                                placeholder="Brief description of the item..."
+                                value={desc}
+                                onChange={(e) => setDesc(e.target.value)}
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                    )}
 
                     <div className="flex gap-3 mt-4">
-                        <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border border-outline-variant/50 text-on-surface font-bold hover:bg-surface transition-colors">
+                        <button type="button" onClick={onClose} disabled={isSubmitting} className="flex-1 py-3 rounded-xl border border-outline-variant/50 text-on-surface font-bold hover:bg-surface transition-colors disabled:opacity-50">
                             Cancel
                         </button>
-                        <button type="submit" className="flex-1 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-[0_4px_14px_0_rgba(255,159,67,0.39)] transition-transform active:scale-[0.98]">
-                            Add Product
+                        <button type="submit" disabled={isSubmitting} className="flex-1 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-[0_4px_14px_0_rgba(255,159,67,0.39)] transition-transform active:scale-[0.98] flex justify-center items-center gap-2 disabled:opacity-70 disabled:scale-100">
+                            {isSubmitting ? <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div> : 'Add Product'}
                         </button>
                     </div>
                 </form>
@@ -102,18 +114,16 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryId, categoryName }) =
 };
 
 // --- Product Card ---
-const ProductCard = ({ item, isSpecial, onToggleStock, onChangeCap }) => {
+const ProductCard = ({ item, isSpecial }) => {
     return (
         <div className="flex flex-col gap-1">
             <div className="bg-surface rounded-xl p-3 flex gap-3 shadow-sm border border-outline-variant/10">
                 {/* Image Thumbnail */}
                 <div className="w-[72px] h-[72px] rounded-lg overflow-hidden shrink-0 bg-surface-container">
-                    {item.image ? (
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    {item.image_url ? (
+                        <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
-                            <span className="material-symbols-outlined text-3xl">restaurant</span>
-                        </div>
+                        <img src={DEFAULT_IMAGE} alt={item.name} className="w-full h-full object-cover" />
                     )}
                 </div>
 
@@ -121,101 +131,110 @@ const ProductCard = ({ item, isSpecial, onToggleStock, onChangeCap }) => {
                 <div className="flex flex-col flex-1 min-w-0">
                     <div className="flex justify-between items-start">
                         <h4 className="text-on-surface font-bold text-[15px] truncate pr-2">{item.name}</h4>
-                        {/* Toggle Switch */}
-                        <label className="flex items-center cursor-pointer shrink-0 mt-0.5" onClick={(e) => e.stopPropagation()}>
-                            <div className="relative">
-                                <input 
-                                    type="checkbox" 
-                                    className="sr-only" 
-                                    checked={item.inStock} 
-                                    onChange={() => onToggleStock(item.id)} 
-                                />
-                                <div className={`block w-9 h-5 rounded-full transition-colors ${item.inStock ? 'bg-[#22c55e]' : 'bg-surface-variant'}`}></div>
-                                <div className={`dot absolute left-[2px] top-[2px] bg-white w-4 h-4 rounded-full transition-transform ${item.inStock ? 'transform translate-x-4' : ''}`}></div>
-                            </div>
-                        </label>
                     </div>
                     
-                    <p className="text-on-surface-variant text-[11px] mt-0.5 line-clamp-2">{item.description}</p>
+                    {isSpecial && item.description && (
+                        <p className="text-on-surface-variant text-[11px] mt-0.5 line-clamp-2">{item.description}</p>
+                    )}
                     
                     <div className="flex items-end justify-between mt-auto">
-                        <p className="text-on-surface font-bold text-[13px]">{item.price}</p>
+                        <p className="text-on-surface font-bold text-[13px]">₹{item.price}</p>
                     </div>
                 </div>
             </div>
-
-            {/* Special Menu Quantity Cap */}
-            {isSpecial && (
-                <div className="flex justify-between items-center bg-surface-container p-2 px-3 rounded-lg border border-outline-variant/20 mx-1">
-                    <span className="text-on-surface-variant text-[11px] font-bold uppercase tracking-wider">Daily Cap</span>
-                    <div className="flex items-center gap-3">
-                        <button 
-                            className="w-6 h-6 rounded-full bg-surface flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors border border-outline-variant/50"
-                            onClick={() => onChangeCap(item.id, Math.max(0, item.cap - 1))}
-                        >
-                            <span className="material-symbols-outlined text-[14px]">remove</span>
-                        </button>
-                        <span className="text-on-surface font-bold text-sm min-w-[24px] text-center">{item.cap}</span>
-                        <button 
-                            className="w-6 h-6 rounded-full bg-surface flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors border border-outline-variant/50"
-                            onClick={() => onChangeCap(item.id, item.cap + 1)}
-                        >
-                            <span className="material-symbols-outlined text-[14px]">add</span>
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
 
 const VendorProducts = () => {
-    const [products, setProducts] = useState(mockVendorProducts);
+    const { canteenId, isLoaded } = useCurrentCanteen();
+    const [menuData, setMenuData] = useState({ specials: [], categories: [] });
+    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [modalConfig, setModalConfig] = useState({ isOpen: false, categoryId: null, categoryName: '' });
+    const [modalConfig, setModalConfig] = useState({ isOpen: false, categoryName: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const toggleStock = (itemId) => {
-        setProducts(prev => {
-            const specialMenu = prev.specialMenu.map(i => i.id === itemId ? { ...i, inStock: !i.inStock } : i);
-            const categories = prev.categories.map(c => ({
-                ...c,
-                items: c.items.map(i => i.id === itemId ? { ...i, inStock: !i.inStock } : i)
+    const fetchMenu = async () => {
+        if (!canteenId) return;
+        try {
+            const response = await api.get(`/canteens/${canteenId}/menu`);
+            const data = response.data;
+            const categories = Object.keys(data.menu).map(categoryName => ({
+                name: categoryName,
+                items: data.menu[categoryName]
             }));
-            return { ...prev, specialMenu, categories };
-        });
+            
+            setMenuData({
+                specials: data.specials || [],
+                categories: categories
+            });
+        } catch (err) {
+            console.error("Failed to fetch owner menu:", err);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const changeCap = (itemId, newCap) => {
-        setProducts(prev => {
-            const specialMenu = prev.specialMenu.map(i => i.id === itemId ? { ...i, cap: newCap } : i);
-            return { ...prev, specialMenu };
-        });
-    };
-
-    const handleAddProduct = (newItem, categoryId) => {
-        setProducts(prev => {
-            if (categoryId === 'special') {
-                return {
-                    ...prev,
-                    specialMenu: [...prev.specialMenu, { ...newItem, cap: 10 }]
-                };
+    useEffect(() => {
+        if (isLoaded) {
+            if (canteenId) {
+                fetchMenu();
             } else {
-                return {
-                    ...prev,
-                    categories: prev.categories.map(c => 
-                        c.id === categoryId ? { ...c, items: [...c.items, newItem] } : c
-                    )
-                };
+                setIsLoading(false);
             }
-        });
+        }
+    }, [isLoaded, canteenId]);
+
+    const handleAddProduct = async (newItemPayload) => {
+        setIsSubmitting(true);
+        try {
+            if (modalConfig.categoryName === 'special') {
+                await api.post(`/owner/specials?canteen_id=${canteenId}`, newItemPayload);
+            } else {
+                await api.post(`/owner/menu?canteen_id=${canteenId}`, newItemPayload);
+            }
+            await fetchMenu();
+        } catch (err) {
+            console.error("Failed to add product:", err);
+            alert("Failed to add product.");
+            throw err;
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    const openAddModal = (categoryId, categoryName) => {
-        setModalConfig({ isOpen: true, categoryId, categoryName });
+    const openAddModal = (categoryName) => {
+        setModalConfig({ isOpen: true, categoryName });
     };
+
+    if (isLoading || !isLoaded) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-background">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+            </div>
+        );
+    }
+
+    if (!canteenId) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen bg-background gap-4">
+                <div className="bg-error-container text-on-error-container p-6 rounded-2xl text-center shadow-lg">
+                    <h2 className="font-bold text-xl">Not Authorized</h2>
+                    <p>You don't have a canteen associated with this account.</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Filter by search query
+    const filteredSpecials = menuData.specials.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const filteredCategories = menuData.categories.map(cat => ({
+        ...cat,
+        items: cat.items.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    })).filter(cat => cat.items.length > 0 || !searchQuery); // keep category if empty only when no search
 
     return (
-        <div className="flex flex-col gap-4 w-full pb-32 pt-4 px-3 relative bg-background">
+        <div className="flex flex-col gap-4 w-full pb-32 pt-4 px-3 relative bg-background min-h-screen">
             
             {/* Header */}
             <div className="flex justify-between items-center px-1 mt-2">
@@ -225,12 +244,6 @@ const VendorProducts = () => {
                     </button>
                     <h1 className="text-xl font-bold text-on-surface">Products</h1>
                 </div>
-                <button 
-                    onClick={() => openAddModal(products.categories[0]?.id, products.categories[0]?.name)}
-                    className="w-8 h-8 flex items-center justify-center text-on-surface rounded-full border border-outline-variant/50 hover:bg-surface-container"
-                >
-                    <span className="material-symbols-outlined text-[22px]">add</span>
-                </button>
             </div>
 
             {/* Search Bar */}
@@ -245,24 +258,22 @@ const VendorProducts = () => {
                 />
             </div>
 
-            {/* Special Menu Section (Always Expanded) */}
+            {/* Special Menu Section */}
             <div className="mt-4 px-1">
                 <div className="flex items-center gap-2 mb-3 px-1">
                     <span className="material-symbols-outlined text-primary text-xl">star</span>
-                    <h2 className="text-on-surface font-bold text-lg">Today's Special ({products.specialMenu.length})</h2>
+                    <h2 className="text-on-surface font-bold text-lg">Today's Special ({filteredSpecials.length})</h2>
                 </div>
                 <div className="flex flex-col gap-4 bg-surface-container-low rounded-3xl p-4 border border-outline-variant/30 shadow-sm">
-                    {products.specialMenu.map(item => (
+                    {filteredSpecials.map(item => (
                         <ProductCard 
                             key={item.id} 
                             item={item} 
                             isSpecial={true} 
-                            onToggleStock={toggleStock}
-                            onChangeCap={changeCap}
                         />
                     ))}
                     <button 
-                        onClick={() => openAddModal('special', "Today's Special")}
+                        onClick={() => openAddModal('special')}
                         className="w-full py-3 mt-2 rounded-xl border border-primary text-primary font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors"
                     >
                         <span className="material-symbols-outlined text-[20px]">add</span>
@@ -271,16 +282,13 @@ const VendorProducts = () => {
                 </div>
             </div>
 
-            {/* Standard Menu Categories (Collapsible) */}
+            {/* Standard Menu Categories */}
             <div className="flex flex-col gap-3 mt-4 px-1">
-                {products.categories.map(category => (
+                {filteredCategories.map(category => (
                     <CollapsibleSection 
-                        key={category.id} 
-                        title={`${category.name}(${category.items.length})`}
-                        defaultOpen={false}
-                        headerRight={
-                            <span className="material-symbols-outlined text-[#22c55e] text-[18px]">edit</span>
-                        }
+                        key={category.name} 
+                        title={`${category.name} (${category.items.length})`}
+                        defaultOpen={true}
                     >
                         <div className="flex flex-col gap-4 mt-2 mb-2">
                             {category.items.map(item => (
@@ -288,12 +296,11 @@ const VendorProducts = () => {
                                     key={item.id} 
                                     item={item} 
                                     isSpecial={false} 
-                                    onToggleStock={toggleStock}
                                 />
                             ))}
                             
                             <button 
-                                onClick={() => openAddModal(category.id, category.name)}
+                                onClick={() => openAddModal(category.name)}
                                 className="w-full py-3 mt-2 rounded-xl border border-[#22c55e] text-[#22c55e] font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#22c55e]/5 transition-colors"
                             >
                                 <span className="material-symbols-outlined text-[20px]">add</span>
@@ -302,15 +309,28 @@ const VendorProducts = () => {
                         </div>
                     </CollapsibleSection>
                 ))}
+
+                {/* Option to create a new category */}
+                <div className="flex justify-center mt-6 mb-12">
+                     <button 
+                         onClick={() => {
+                             const newCat = prompt("Enter new category name:");
+                             if (newCat) openAddModal(newCat);
+                         }}
+                         className="px-6 py-2 rounded-full border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface transition-colors"
+                     >
+                         + New Category
+                     </button>
+                </div>
             </div>
 
             {/* Modal */}
             <AddProductModal 
                 isOpen={modalConfig.isOpen}
-                categoryId={modalConfig.categoryId}
                 categoryName={modalConfig.categoryName}
-                onClose={() => setModalConfig({ isOpen: false, categoryId: null, categoryName: '' })}
+                onClose={() => setModalConfig({ isOpen: false, categoryName: '' })}
                 onAdd={handleAddProduct}
+                isSubmitting={isSubmitting}
             />
 
         </div>
