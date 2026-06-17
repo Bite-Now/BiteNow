@@ -10,6 +10,7 @@ import OrderHistory from './pages/OrderHistory';
 import Surprise from './pages/Surprise';
 import Budget from './pages/Budget';
 import Unauthorized from './pages/Unauthorized';
+import MockPayment from './pages/student/MockPayment';
 import MainLayout from './components/layout/MainLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { RoleRedirect } from './components/auth/RoleRedirect';
@@ -48,6 +49,8 @@ function App() {
           <Route path="/surprise" element={<Surprise />} />
           <Route path="/budget" element={<Budget />} />
         </Route>
+
+        <Route path="/checkout" element={<ProtectedRoute allowedRoles={['STUDENT']}><MockPayment /></ProtectedRoute>} />
 
         {/* Protected Routes - STAFF */}
         <Route path="/staff" element={<ProtectedRoute allowedRoles={['STAFF']}><StaffDashboard /></ProtectedRoute>} />

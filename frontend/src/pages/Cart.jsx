@@ -8,10 +8,8 @@ const Cart = () => {
 
     const handleCheckout = () => {
         if (items.length === 0) return;
-        clearCart();
-        // Since we don't have a backend to actually push the order to MOCK_ORDERS,
-        // we simulate success and navigate to the live tracker.
-        navigate('/orders');
+        // Do not clear cart yet, pass it to mock payment screen
+        navigate('/checkout');
     };
 
     return (
