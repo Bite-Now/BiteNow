@@ -2,13 +2,14 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/useCartStore';
 
+
 const Cart = () => {
     const navigate = useNavigate();
     const { items, addToCart, removeFromCart, clearCart, getTotalPrice } = useCartStore();
 
     const handleCheckout = () => {
         if (items.length === 0) return;
-        // Do not clear cart yet, pass it to mock payment screen
+        // Proceed directly to mock payment screen, since backend expects payment first
         navigate('/checkout');
     };
 
@@ -69,9 +70,10 @@ const Cart = () => {
                                 <span className="font-body-md text-on-surface-variant">Total Amount</span>
                                 <span className="font-headline-md text-primary-container">₹{getTotalPrice()}</span>
                             </div>
+
                             <button 
                                 onClick={handleCheckout}
-                                className="w-full py-md bg-primary-container text-on-primary-container font-label-md text-label-md rounded-xl hover:bg-primary hover:text-on-primary transition-colors active:scale-[0.98] flex justify-center items-center gap-2 glow-effect"
+                                className="w-full py-md bg-primary-container text-on-primary-container font-label-md text-label-md rounded-xl flex justify-center items-center gap-2 hover:bg-primary hover:text-on-primary transition-colors active:scale-[0.98] glow-effect"
                             >
                                 <span className="material-symbols-outlined text-[20px]">shopping_cart_checkout</span>
                                 Proceed to Pay

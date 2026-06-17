@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '../../store/useCartStore';
 import { useAuth } from '@clerk/clerk-react';
+import { mockPaymentSuccess, mockPaymentFailed } from '../../services/ordersApi';
 
 const MockPayment = () => {
     const navigate = useNavigate();
@@ -17,9 +18,6 @@ const MockPayment = () => {
         setError(null);
 
         try {
-            const token = await getToken();
-            const endpoint = isSuccess ? '/payments/mock-success' : '/payments/mock-failed';
-            
             const canteenId = items.length > 0 ? items[0].canteenId : null;
             if (!canteenId) throw new Error("Cart is empty");
 
@@ -29,19 +27,11 @@ const MockPayment = () => {
                 idempotency_key: crypto.randomUUID()
             };
 
-            const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.detail || "Payment processing failed");
+            let data;
+            if (isSuccess) {
+                data = await mockPaymentSuccess(payload);
+            } else {
+                data = await mockPaymentFailed(payload);
             }
 
             if (!isSuccess || data.success === false) {
@@ -53,7 +43,7 @@ const MockPayment = () => {
             clearCart();
             navigate('/orders');
         } catch (err) {
-            setError(err.message || "An unexpected error occurred");
+            setError(err.response?.data?.detail || err.message || "An unexpected error occurred");
         } finally {
             setLoading(false);
         }

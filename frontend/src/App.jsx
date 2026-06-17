@@ -23,8 +23,9 @@ import VendorProducts from './pages/vendor/VendorProducts';
 import VendorEarnings from './pages/vendor/VendorEarnings';
 import VendorStaff from './pages/vendor/VendorStaff';
 
+import StaffDashboard from './pages/StaffDashboard';
+
 // Dummy components for missing dashboards to satisfy router
-const StaffDashboard = () => <div className="p-8 text-white">Staff Dashboard</div>;
 const AdminDashboard = () => <div className="p-8 text-white">Admin Dashboard</div>;
 
 function App() {

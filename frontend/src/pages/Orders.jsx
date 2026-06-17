@@ -1,13 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_ORDERS } from '../data/mockData';
+import { getStudentOrders } from '../services/ordersApi';
 
 const Orders = () => {
   const navigate = useNavigate();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchOrders();
+    // Optional: setup polling here
+    const intervalId = setInterval(fetchOrders, 10000); // 10s polling
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const data = await getStudentOrders();
+      // Filter out completed/cancelled if needed, but typically backend returns active
+      const activeOrders = data.filter(o => !['COMPLETED', 'CANCELLED'].includes(o.status));
+      setOrders(activeOrders);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to fetch orders:", err);
+      // setError("Failed to fetch live orders");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status) => {
     switch(status) {
-      case 'IN_QUEUE': return 'text-primary-container bg-primary-container/20';
+      case 'PAID': return 'text-primary-container bg-primary-container/20';
       case 'PREPARING': return 'text-primary bg-primary/20';
       case 'READY': return 'text-secondary bg-secondary/20';
       default: return 'text-on-surface-variant bg-surface-variant';
@@ -16,10 +41,10 @@ const Orders = () => {
 
   const getStatusText = (status) => {
     switch(status) {
-      case 'IN_QUEUE': return '🟡 In Queue';
+      case 'PAID': return '🟡 Paid & Received';
       case 'PREPARING': return '🟠 Preparing';
       case 'READY': return '🟢 Ready for Pickup';
-      default: return '⚪ Unknown';
+      default: return `⚪ ${status}`;
     }
   };
 
@@ -43,7 +68,13 @@ const Orders = () => {
           <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Live Tracking</h1>
         </div>
 
-        {MOCK_ORDERS.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center mt-20">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center mt-20 text-error">{error}</div>
+        ) : orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center mt-20 text-center">
             <span className="material-symbols-outlined text-6xl text-surface-variant mb-4">receipt_long</span>
             <h2 className="font-headline-md text-on-surface mb-2">No Active Orders</h2>
@@ -51,15 +82,15 @@ const Orders = () => {
           </div>
         ) : (
           <div className="space-y-lg mb-lg">
-            {MOCK_ORDERS.map((order) => (
+            {orders.map((order) => (
               <div key={order.id} className="bg-surface-container-low rounded-xl p-md border border-surface-variant">
                 <div className="flex justify-between items-start mb-md pb-md border-b border-surface-variant/50">
                   <div>
                     <div className="flex items-center gap-xs mb-xs">
                       <span className="material-symbols-outlined text-primary text-[18px]">storefront</span>
-                      <h2 className="font-label-md text-label-md text-on-surface">{order.canteenName} Canteen</h2>
+                      <h2 className="font-label-md text-label-md text-on-surface">Order at Canteen {order.canteen_id?.substring(0,4)}</h2>
                     </div>
-                    <div className="font-body-sm text-body-sm text-on-surface-variant">Order {order.id}</div>
+                    <div className="font-body-sm text-body-sm text-on-surface-variant">Order {order.id.substring(0,8)}</div>
                   </div>
                   <div className={`font-label-sm text-label-sm px-sm py-xs rounded-full ${getStatusColor(order.status)}`}>
                     {getStatusText(order.status)}
@@ -67,14 +98,16 @@ const Orders = () => {
                 </div>
 
                 <div className="space-y-sm">
-                  {order.items.map((item, index) => (
+                  {order.items && order.items.map((item, index) => (
                     <div key={index} className="flex items-center gap-md">
                       <div className="w-16 h-16 rounded-lg bg-surface-container-highest overflow-hidden flex-shrink-0 relative">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                        {/* No image in backend response for order items currently, show placeholder */}
+                        <div className="w-full h-full bg-surface-variant flex items-center justify-center">
+                          <span className="material-symbols-outlined text-on-surface-variant text-xl">fastfood</span>
+                        </div>
                       </div>
                       <div className="flex-grow flex justify-between items-center">
-                        <div className="font-label-md text-label-md text-on-surface">{item.name}</div>
+                        <div className="font-label-md text-label-md text-on-surface">Item {item.menu_item_id.substring(0,4)}</div>
                         <div className="font-body-sm text-body-sm text-on-surface-variant bg-surface-container px-sm py-xs rounded-lg border border-surface-variant">
                           Qty: {item.quantity}
                         </div>
