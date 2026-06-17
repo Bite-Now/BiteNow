@@ -93,12 +93,10 @@ BiteNow/
 │   │   └── services/       # API integration logic
 │   └── package.json
 ├── backend/                # FastAPI python application
-│   ├── app/
-│   │   ├── main.py         # Entry point
-│   │   ├── modules/        # Domain-driven feature modules (auth, menu, etc.)
-│   │   └── database.py     # DB connection config
-│   └── requirements.txt
-└── openspec/               # Specification-driven development docs
-    ├── changes/            # Active and archived feature proposals
-    └── specs/              # Source-of-truth capability requirements
+    ├── app/
+    │   ├── main.py         # Entry point
+    │   ├── modules/        # Domain-driven feature modules (auth, menu, etc.)
+    │   └── database.py     # DB connection config
+    └── requirements.txt
+
 ```
