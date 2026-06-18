@@ -92,8 +92,8 @@ async def get_staff_orders(
         
     return await service.get_staff_orders(assignment.canteen_id)
 
-@staff_router.patch("/{order_id}/complete", response_model=OrderResponse)
-async def complete_staff_order(
+@staff_router.patch("/{order_id}/ready", response_model=OrderResponse)
+async def ready_staff_order(
     order_id: UUID,
     user: User = Depends(require_staff),
     db: AsyncSession = Depends(get_db),
@@ -110,7 +110,7 @@ async def complete_staff_order(
     if not order or order.canteen_id != assignment.canteen_id:
         raise HTTPException(status_code=404, detail="Order not found")
         
-    return await service.mark_completed(order_id)
+    return await service.mark_ready(order_id)
 
 # -----------------
 # Owner Orders
@@ -132,8 +132,8 @@ async def get_owner_orders(
         
     return await service.get_owner_orders(canteen.id)
 
-@owner_router.patch("/{order_id}/complete", response_model=OrderResponse)
-async def complete_owner_order(
+@owner_router.patch("/{order_id}/ready", response_model=OrderResponse)
+async def ready_owner_order(
     order_id: UUID,
     user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
@@ -150,4 +150,26 @@ async def complete_owner_order(
     if not order or order.canteen_id != canteen.id:
         raise HTTPException(status_code=404, detail="Order not found")
         
-    return await service.mark_completed(order_id)
+    return await service.mark_ready(order_id)
+
+from app.modules.orders.schemas import OrderCreateRequest, OrderResponse, MockFailureRequest, NotificationResponse
+
+# -----------------
+# Notifications
+# -----------------
+notifications_router = APIRouter(prefix="/notifications", tags=["Notifications"])
+
+@notifications_router.get("", response_model=List[NotificationResponse])
+async def get_my_notifications(
+    user: User = Depends(require_strict_student),
+    service: OrderService = Depends(get_order_service)
+):
+    return await service.get_notifications(user.id)
+
+@notifications_router.patch("/{notification_id}/read", response_model=NotificationResponse)
+async def read_notification(
+    notification_id: UUID,
+    user: User = Depends(require_strict_student),
+    service: OrderService = Depends(get_order_service)
+):
+    return await service.mark_notification_read(notification_id, user.id)

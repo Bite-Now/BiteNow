@@ -25,6 +25,7 @@ class OrderResponse(BaseModel):
     id: UUID
     student_id: UUID
     canteen_id: UUID
+    order_number: Optional[int] = None
     status: str
     total_amount: Decimal
     created_at: datetime
@@ -35,3 +36,13 @@ class OrderResponse(BaseModel):
 class MockFailureRequest(BaseModel):
     canteen_id: UUID
     items: List[OrderCreateItem]
+
+class NotificationResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    title: str
+    message: str
+    is_read: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

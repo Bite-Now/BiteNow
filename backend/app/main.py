@@ -7,10 +7,7 @@ from app.modules.owner.router import router as owner_router
 from app.modules.admin.router import router as admin_router
 from app.modules.webhooks.router import router as webhook_router
 from app.modules.menu.router import router as menu_router
-from app.modules.orders.router import router as orders_router
-from app.modules.orders.router import payments_router
-from app.modules.orders.router import staff_router as orders_staff_router
-from app.modules.orders.router import owner_router as orders_owner_router
+from app.modules.orders.router import router as orders_router, payments_router, staff_router as orders_staff_router, owner_router as orders_owner_router, notifications_router
 
 app = FastAPI(
     title="BiteNow API",
@@ -21,7 +18,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,7 +34,12 @@ app.include_router(orders_router)
 app.include_router(payments_router)
 app.include_router(orders_staff_router)
 app.include_router(orders_owner_router)
+app.include_router(notifications_router)
 
 @app.get("/")
 def read_root():
     return {"message": "Welcome to BiteNow API"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}

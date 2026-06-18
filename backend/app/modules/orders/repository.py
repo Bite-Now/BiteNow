@@ -21,47 +21,64 @@ class OrderRepository:
     ) -> Optional[Order]:
         """
         Create a new order and its items.
-        Catches IntegrityError if idempotency_key is duplicated.
+        Catches IntegrityError if idempotency_key or order_number is duplicated.
         """
-        try:
-            # Try to fetch existing first (rare, but good for concurrency)
-            existing = await self.get_order_by_idempotency_key(idempotency_key)
-            if existing:
-                return existing
+        from sqlalchemy import func
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Try to fetch existing first (rare, but good for concurrency)
+                existing = await self.get_order_by_idempotency_key(idempotency_key)
+                if existing:
+                    return existing
 
-            order = Order(
-                student_id=student_id,
-                canteen_id=canteen_id,
-                status=status,
-                total_amount=total_amount,
-                idempotency_key=idempotency_key
-            )
-            self.session.add(order)
-            await self.session.flush() # flush to get order.id
+                # Generate order_number
+                stmt_max = select(func.max(Order.order_number)).where(Order.canteen_id == canteen_id)
+                max_res = await self.session.execute(stmt_max)
+                max_num = max_res.scalar() or 0
+                next_order_number = max_num + 1
 
-            for item in items_data:
-                order_item = OrderItem(
-                    order_id=order.id,
-                    menu_item_id=item["menu_item_id"],
-                    quantity=item["quantity"],
-                    unit_price=item["unit_price"]
+                order = Order(
+                    student_id=student_id,
+                    canteen_id=canteen_id,
+                    status=status,
+                    total_amount=total_amount,
+                    idempotency_key=idempotency_key,
+                    order_number=next_order_number
                 )
-                self.session.add(order_item)
-            
-            await self.session.commit()
-            
-            # Refresh to load items
-            return await self.get_order_by_id(order.id)
-            
-        except exc.IntegrityError as e:
-            await self.session.rollback()
-            print(f"[ERROR] IntegrityError in create_order: {e}")
-            # Try to fetch if it was idempotency_key
-            existing = await self.get_order_by_idempotency_key(idempotency_key)
-            if existing:
-                return existing
-            # If not idempotency_key (e.g. FK failure), raise it or return None
-            raise HTTPException(status_code=500, detail=f"Database integrity error: {str(e.orig)}")
+                self.session.add(order)
+                await self.session.flush() # flush to get order.id
+
+                for item in items_data:
+                    order_item = OrderItem(
+                        order_id=order.id,
+                        menu_item_id=item["menu_item_id"],
+                        quantity=item["quantity"],
+                        unit_price=item["unit_price"]
+                    )
+                    self.session.add(order_item)
+                
+                await self.session.commit()
+                
+                # Refresh to load items
+                return await self.get_order_by_id(order.id)
+                
+            except exc.IntegrityError as e:
+                await self.session.rollback()
+                print(f"[ERROR] IntegrityError in create_order: {e}")
+                # Try to fetch if it was idempotency_key
+                existing = await self.get_order_by_idempotency_key(idempotency_key)
+                if existing:
+                    return existing
+                
+                # Check if it was uq_canteen_order_number
+                if 'uq_canteen_order_number' in str(e.orig):
+                    if attempt < max_retries - 1:
+                        print(f"Retrying order generation due to uq_canteen_order_number conflict... (Attempt {attempt + 1})")
+                        continue
+
+                # If not idempotency_key (e.g. FK failure), raise it or return None
+                raise HTTPException(status_code=500, detail=f"Database integrity error: {str(e.orig)}")
 
     async def get_order_by_idempotency_key(self, idempotency_key: UUID) -> Optional[Order]:
         stmt = select(Order).where(Order.idempotency_key == idempotency_key)
@@ -116,3 +133,43 @@ class OrderRepository:
             order.status = status
             await self.session.commit()
         return order
+
+    async def create_notification(self, user_id: UUID, title: str, message: str):
+        from .models import Notification
+        notification = Notification(user_id=user_id, title=title, message=message)
+        self.session.add(notification)
+        await self.session.commit()
+        return notification
+
+    async def get_notifications(self, user_id: UUID):
+        from .models import Notification
+        stmt = select(Notification).where(Notification.user_id == user_id).order_by(Notification.created_at.desc())
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def mark_notification_read(self, notification_id: UUID, user_id: UUID):
+        from .models import Notification
+        stmt = select(Notification).where(Notification.id == notification_id, Notification.user_id == user_id)
+        result = await self.session.execute(stmt)
+        notification = result.scalars().first()
+        if notification:
+            notification.is_read = True
+            await self.session.commit()
+        return notification
+
+    async def auto_collect_stale_orders(self):
+        from datetime import datetime, timedelta, timezone
+        from sqlalchemy import update, and_
+        five_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=5)
+        stmt = (
+            update(Order)
+            .where(
+                and_(
+                    Order.status == "READY",
+                    Order.updated_at < five_minutes_ago
+                )
+            )
+            .values(status="COLLECTED")
+        )
+        await self.session.execute(stmt)
+        await self.session.commit()

@@ -70,20 +70,44 @@ class OrderService:
             raise HTTPException(status_code=500, detail="Failed to create order")
         return order
 
+    async def auto_collect_stale_orders(self):
+        await self.order_repo.auto_collect_stale_orders()
+
     async def get_student_orders(self, student_id: UUID) -> List[Order]:
+        await self.auto_collect_stale_orders()
         return await self.order_repo.get_orders_by_student(student_id)
 
     async def get_staff_orders(self, canteen_id: UUID) -> List[Order]:
-        return await self.order_repo.get_orders_by_canteen(canteen_id, statuses=["PAID", "COMPLETED"])
+        await self.auto_collect_stale_orders()
+        return await self.order_repo.get_orders_by_canteen(canteen_id, statuses=["PAID", "READY"])
 
     async def get_owner_orders(self, canteen_id: UUID) -> List[Order]:
+        await self.auto_collect_stale_orders()
         return await self.order_repo.get_orders_by_canteen(canteen_id)
 
     async def get_order_by_id(self, order_id: UUID) -> Optional[Order]:
         return await self.order_repo.get_order_by_id(order_id)
 
-    async def mark_completed(self, order_id: UUID) -> Order:
-        order = await self.order_repo.update_order_status(order_id, "COMPLETED")
+    async def mark_ready(self, order_id: UUID) -> Order:
+        order = await self.order_repo.update_order_status(order_id, "READY")
         if not order:
             raise HTTPException(status_code=404, detail="Order not found")
+        
+        # Create notification
+        canteen = await self.menu_repo.get_canteen_by_id(order.canteen_id) if hasattr(self.menu_repo, 'get_canteen_by_id') else None
+        canteen_name = canteen.name if canteen else "the Canteen"
+        
+        title = "Order Ready"
+        message = f"Your order #{order.order_number} is ready for pickup from {canteen_name}."
+        await self.order_repo.create_notification(order.student_id, title, message)
+        
         return order
+
+    async def get_notifications(self, student_id: UUID):
+        return await self.order_repo.get_notifications(student_id)
+
+    async def mark_notification_read(self, notification_id: UUID, student_id: UUID):
+        notification = await self.order_repo.mark_notification_read(notification_id, student_id)
+        if not notification:
+            raise HTTPException(status_code=404, detail="Notification not found")
+        return notification

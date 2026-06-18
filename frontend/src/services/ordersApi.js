@@ -27,8 +27,8 @@ export const getStaffOrders = async () => {
     return response.data;
 };
 
-export const completeStaffOrder = async (orderId) => {
-    const response = await api.patch(`/staff/orders/${orderId}/complete`);
+export const markOrderReadyStaff = async (orderId) => {
+    const response = await api.patch(`/staff/orders/${orderId}/ready`);
     return response.data;
 };
 
@@ -37,7 +37,17 @@ export const getOwnerOrders = async () => {
     return response.data;
 };
 
-export const completeOwnerOrder = async (orderId) => {
-    const response = await api.patch(`/owner/orders/${orderId}/complete`);
+export const markOrderReadyOwner = async (orderId) => {
+    const response = await api.patch(`/owner/orders/${orderId}/ready`);
+    return response.data;
+};
+
+export const getNotifications = async () => {
+    const response = await api.get('/notifications');
+    return response.data;
+};
+
+export const markNotificationRead = async (notificationId) => {
+    const response = await api.patch(`/notifications/${notificationId}/read`);
     return response.data;
 };

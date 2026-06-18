@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getOwnerOrders, completeOwnerOrder } from '../../services/ordersApi';
+import { getOwnerOrders, markOrderReadyOwner } from '../../services/ordersApi';
 import { useAuth } from '@clerk/clerk-react';
 
 const BatchCard = ({ batch, onMarkReady, isPending }) => {
@@ -8,7 +8,7 @@ const BatchCard = ({ batch, onMarkReady, isPending }) => {
             <div className="flex justify-between items-start">
                 <div className="flex items-center gap-2">
                     <span className="bg-primary/20 text-primary font-bold text-xs px-2 py-1 rounded-md">
-                        {batch.id.substring(0,8)}
+                        #{batch.order_number || batch.id.substring(0,8)}
                     </span>
                     <span className="text-on-surface-variant text-xs">{new Date(batch.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
@@ -46,19 +46,14 @@ const BatchCard = ({ batch, onMarkReady, isPending }) => {
     );
 };
 
-
 const VendorOrders = () => {
     const { getToken } = useAuth();
     const [activeTab, setActiveTab] = useState('pending');
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Simplistic check for role by reading the token claims if possible, 
-    // but the API intercepts and adds the token. 
-    // Since we don't have user.publicMetadata easily without useUser, let's just try getOwnerOrders, and if 403, fallback to getStaffOrders
     const fetchOrders = async () => {
         try {
-            // we will just use getOwnerOrders for now and if it fails with 403, try getStaffOrders.
             let data;
             try {
                 data = await getOwnerOrders();
@@ -85,22 +80,22 @@ const VendorOrders = () => {
     const handleMarkReady = async (batchId) => {
         try {
             try {
-                await completeOwnerOrder(batchId);
+                await markOrderReadyOwner(batchId);
             } catch (err) {
                 if (err.response?.status === 403) {
-                    const { completeStaffOrder } = await import('../../services/ordersApi');
-                    await completeStaffOrder(batchId);
+                    const { markOrderReadyStaff } = await import('../../services/ordersApi');
+                    await markOrderReadyStaff(batchId);
                 } else throw err;
             }
             fetchOrders();
         } catch (err) {
-            console.error("Failed to complete order", err);
-            alert("Failed to complete order.");
+            console.error("Failed to mark order ready", err);
+            alert("Failed to mark order ready.");
         }
     };
 
     const pendingBatches = orders.filter(o => o.status === 'PAID' || o.status === 'PREPARING');
-    const successfulBatches = orders.filter(o => o.status === 'COMPLETED' || o.status === 'READY');
+    const successfulBatches = orders.filter(o => o.status === 'READY');
 
     const currentBatches = activeTab === 'pending' ? pendingBatches : successfulBatches;
 
