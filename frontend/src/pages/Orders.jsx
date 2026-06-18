@@ -64,49 +64,12 @@ const Orders = () => {
 
   return (
     <div className="font-body-md flex flex-col pb-32 md:pb-8 relative">
-      {/* TopAppBar */}
-      <header className="sticky top-0 z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-md shadow-lg shadow-primary/5 flex justify-between items-center px-container-margin py-md">
-        <div className="flex items-center gap-sm">
-          <span className="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style={{ fontVariationSettings: '"FILL" 1' }}>restaurant_menu</span>
-          <span className="font-headline-md text-headline-md-mobile font-bold text-primary dark:text-primary-fixed-dim">BiteNow</span>
-        </div>
-        <div className="flex items-center gap-sm relative">
-          <button onClick={() => setShowNotifications(!showNotifications)} className="p-xs text-on-surface hover:text-primary transition-colors active:scale-95 relative">
-            <span className="material-symbols-outlined text-[24px]">notifications</span>
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-3 h-3 bg-error rounded-full border-2 border-surface"></span>
-            )}
-          </button>
-          
-          {showNotifications && (
-            <div className="absolute top-full right-0 mt-2 w-72 max-h-96 overflow-y-auto bg-surface-container rounded-xl shadow-lg border border-outline-variant/20 z-50">
-              <div className="p-3 border-b border-outline-variant/20 font-bold">Notifications</div>
-              {notifications.length === 0 ? (
-                <div className="p-4 text-center text-on-surface-variant text-sm">No notifications</div>
-              ) : (
-                notifications.map(n => (
-                  <div 
-                    key={n.id} 
-                    onClick={() => !n.is_read && handleReadNotification(n.id)}
-                    className={`p-3 border-b border-outline-variant/10 cursor-pointer transition-colors ${n.is_read ? 'opacity-50' : 'bg-primary/5 hover:bg-primary/10'}`}
-                  >
-                    <div className="font-bold text-sm">{n.title}</div>
-                    <div className="text-xs text-on-surface-variant mt-1">{n.message}</div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
+      <main className="flex-grow container mx-auto px-container-margin max-w-2xl">
+        <div className="flex justify-between items-center mb-lg mt-md">
+          <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Live Tracking</h1>
           <button onClick={() => navigate('/history')} className="p-xs text-on-surface hover:text-primary transition-colors active:scale-95">
             <span className="material-symbols-outlined text-[24px]">history</span>
           </button>
-        </div>
-      </header>
-
-      <main className="flex-grow container mx-auto px-container-margin max-w-2xl">
-        <div className="flex justify-between items-end mb-lg mt-md">
-          <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Live Tracking</h1>
         </div>
 
         {loading ? (

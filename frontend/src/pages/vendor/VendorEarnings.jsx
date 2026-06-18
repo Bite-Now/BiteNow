@@ -1,5 +1,6 @@
 import React from 'react';
 import { dashboardStats, payoutHistory } from '../../data/mockVendorData';
+import GoldenGlowButton from '../../components/ui/GoldenGlowButton';
 
 const VendorEarnings = () => {
     return (
@@ -29,41 +30,13 @@ const VendorEarnings = () => {
                 </div>
 
                 <div className="flex gap-3 z-10 mt-2">
-                    <button className="flex-1 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-[0_4px_14px_0_rgba(255,159,67,0.39)] transition-transform active:scale-[0.98]">
+                    <GoldenGlowButton className="w-full">
                         Withdraw Funds
-                    </button>
+                    </GoldenGlowButton>
                 </div>
             </div>
 
-            {/* Payout History */}
-            <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 px-1">
-                    <span className="material-symbols-outlined text-tertiary text-xl">history</span>
-                    <h2 className="text-on-surface font-bold text-lg">Recent Payouts</h2>
-                </div>
-                
-                <div className="bg-surface-container rounded-2xl shadow-sm border border-outline-variant/20 overflow-hidden">
-                    {payoutHistory.map((payout, idx) => (
-                        <div 
-                            key={payout.id} 
-                            className={`p-4 flex justify-between items-center ${idx !== payoutHistory.length - 1 ? 'border-b border-outline-variant/20' : ''}`}
-                        >
-                            <div className="flex flex-col gap-1">
-                                <span className="text-on-surface font-bold">{payout.amount}</span>
-                                <span className="text-on-surface-variant text-xs">{payout.date} • {payout.id}</span>
-                            </div>
-                            <div>
-                                {payout.status === 'Completed' ? (
-                                    <span className="bg-[#22c55e]/10 text-[#22c55e] text-xs font-bold px-2 py-1 rounded-md">Completed</span>
-                                ) : (
-                                    <span className="bg-[#f59e0b]/10 text-[#f59e0b] text-xs font-bold px-2 py-1 rounded-md">Pending</span>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
+            
             <hr className="border-outline-variant/20 my-2" />
 
             {/* Data Export UI */}
@@ -97,14 +70,18 @@ const VendorEarnings = () => {
 
                     {/* Export Buttons */}
                     <div className="flex gap-3 mt-2">
-                        <button className="flex-1 py-2.5 rounded-xl border-2 border-primary text-primary font-bold hover:bg-primary/5 transition-colors flex justify-center items-center gap-2">
-                            <span className="material-symbols-outlined text-lg">description</span>
-                            CSV
-                        </button>
-                        <button className="flex-1 py-2.5 rounded-xl border-2 border-tertiary text-tertiary font-bold hover:bg-tertiary/5 transition-colors flex justify-center items-center gap-2">
-                            <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
-                            PDF
-                        </button>
+                        <div className="flex-1">
+                            <GoldenGlowButton variant="neutral" className="w-full">
+                                <span className="material-symbols-outlined text-lg mr-1">description</span>
+                                CSV
+                            </GoldenGlowButton>
+                        </div>
+                        <div className="flex-1">
+                            <GoldenGlowButton variant="neutral" className="w-full">
+                                <span className="material-symbols-outlined text-lg mr-1">picture_as_pdf</span>
+                                PDF
+                            </GoldenGlowButton>
+                        </div>
                     </div>
                 </div>
             </div>

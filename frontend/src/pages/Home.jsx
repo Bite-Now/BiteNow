@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ProfileDropdown from '../components/common/ProfileDropdown';
-import api from '../services/api';
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1544025162-d76694265947?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
 
@@ -28,17 +26,7 @@ const Home = () => {
     }, []);
 
     return (
-        <div className="flex flex-col pb-32 relative min-h-screen">
-            {/* TopAppBar */}
-            <header className="sticky top-0 z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-md shadow-lg shadow-primary/5 flex justify-between items-center px-container-margin py-md">
-                <div className="flex items-center gap-sm cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                    <span className="material-symbols-outlined text-primary dark:text-primary-fixed-dim text-2xl" data-icon="restaurant_menu">restaurant_menu</span>
-                    <h1 className="font-headline-md text-headline-md-mobile font-bold text-primary dark:text-primary-fixed-dim active:scale-95 transition-transform duration-200">BiteNow</h1>
-                </div>
-                <div className="flex items-center gap-md">
-                    <ProfileDropdown />
-                </div>
-            </header>
+        <div className="flex flex-col pb-32 relative">
 
             {/* Content Canvas */}
             <main className="px-container-margin flex flex-col gap-lg w-full pt-4">

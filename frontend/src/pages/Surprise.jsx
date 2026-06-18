@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { generateSurpriseDeck } from '../utils/surpriseGenerator';
 import { useCartStore } from '../store/useCartStore';
+import { useWalletStore } from '../store/useWalletStore';
 import { useNavigate } from 'react-router-dom';
 
 const GENERATION_TEXTS = [
@@ -86,6 +87,7 @@ const PopularPicksCarousel = () => {
 const Surprise = () => {
     const navigate = useNavigate();
     const { addToCart, getTotalItems } = useCartStore();
+    const { currentBalance } = useWalletStore();
     const totalCartItems = getTotalItems();
     
     // State
@@ -148,7 +150,7 @@ const Surprise = () => {
     return (
         <div className="absolute inset-0 bg-background text-on-surface flex flex-col items-center justify-center overflow-hidden pt-safe pb-[90px] perspective-[1000px]">
             {/* Header stays static */}
-            <div className="absolute top-8 left-0 right-0 px-6 text-center z-10 pointer-events-none">
+            <div className="absolute top-8 left-0 right-0 px-6 text-center z-10 pointer-events-none flex flex-col items-center">
                 <h1 className="text-white font-headline-lg-mobile tracking-tight">✨ Surprise Me</h1>
                 <p className="text-white/60 font-body-sm mt-1">"Let AI build your next meal."</p>
                 {flowState === 'setup' && (

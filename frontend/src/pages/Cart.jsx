@@ -1,16 +1,27 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/useCartStore';
+import { useNotificationStore } from '../store/useNotificationStore';
 
 
 const Cart = () => {
     const navigate = useNavigate();
     const { items, addToCart, removeFromCart, clearCart, getTotalPrice } = useCartStore();
+    const { addNotification } = useNotificationStore();
 
     const handleCheckout = () => {
         if (items.length === 0) return;
-        // Proceed directly to mock payment screen, since backend expects payment first
-        navigate('/checkout');
+        
+        addNotification({
+            type: 'order',
+            title: 'New Order Received',
+            message: `Order placed for ₹${getTotalPrice()}`
+        });
+
+        clearCart();
+        // Since we don't have a backend to actually push the order to MOCK_ORDERS,
+        // we simulate success and navigate to the live tracker.
+        navigate('/orders');
     };
 
     return (

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { getOwnerOrders, markOrderReadyOwner } from '../../services/ordersApi';
-import { useAuth } from '@clerk/clerk-react';
+import React, { useState } from 'react';
+import { initialPendingBatches, initialSuccessfulBatches } from '../../data/mockVendorData';
+import GoldenGlowButton from '../../components/ui/GoldenGlowButton';
+import { useNotificationStore } from '../../store/useNotificationStore';
 
 const BatchCard = ({ batch, onMarkReady, isPending }) => {
     return (
@@ -35,12 +36,15 @@ const BatchCard = ({ batch, onMarkReady, isPending }) => {
             </div>
 
             {isPending && (
-                <button 
-                    onClick={() => onMarkReady(batch.id)}
-                    className="w-full mt-2 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-[0_4px_14px_0_rgba(255,159,67,0.39)] transition-transform active:scale-[0.98]"
-                >
-                    Mark Ready
-                </button>
+                <div className="mt-2">
+                    <GoldenGlowButton 
+                        variant="neutral"
+                        onClick={() => onMarkReady(batch.id)}
+                        className="w-full"
+                    >
+                        Mark Ready
+                    </GoldenGlowButton>
+                </div>
             )}
         </div>
     );
@@ -49,48 +53,23 @@ const BatchCard = ({ batch, onMarkReady, isPending }) => {
 const VendorOrders = () => {
     const { getToken } = useAuth();
     const [activeTab, setActiveTab] = useState('pending');
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [pendingBatches, setPendingBatches] = useState(initialPendingBatches);
+    const [successfulBatches, setSuccessfulBatches] = useState(initialSuccessfulBatches);
+    const { addNotification } = useNotificationStore();
 
-    const fetchOrders = async () => {
-        try {
-            let data;
-            try {
-                data = await getOwnerOrders();
-            } catch (err) {
-                if (err.response?.status === 403) {
-                    const { getStaffOrders } = await import('../../services/ordersApi');
-                    data = await getStaffOrders();
-                } else throw err;
-            }
-            setOrders(data);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchOrders();
-        const interval = setInterval(fetchOrders, 10000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const handleMarkReady = async (batchId) => {
-        try {
-            try {
-                await markOrderReadyOwner(batchId);
-            } catch (err) {
-                if (err.response?.status === 403) {
-                    const { markOrderReadyStaff } = await import('../../services/ordersApi');
-                    await markOrderReadyStaff(batchId);
-                } else throw err;
-            }
-            fetchOrders();
-        } catch (err) {
-            console.error("Failed to mark order ready", err);
-            alert("Failed to mark order ready.");
+    const handleMarkReady = (batchId) => {
+        const batchToMove = pendingBatches.find(b => b.id === batchId);
+        if (batchToMove) {
+            setPendingBatches(prev => prev.filter(b => b.id !== batchId));
+            setSuccessfulBatches(prev => [
+                { ...batchToMove, completedAt: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }, 
+                ...prev
+            ]);
+            addNotification({
+                type: 'order',
+                title: 'Order Ready!',
+                message: `Batch ${batchId} (${batchToMove.itemName}) is ready for pickup.`
+            });
         }
     };
 

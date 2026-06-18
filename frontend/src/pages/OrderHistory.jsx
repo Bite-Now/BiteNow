@@ -5,63 +5,20 @@ import { getStudentOrders } from '../services/ordersApi';
 
 const OrderHistory = () => {
   const navigate = useNavigate();
-  const addItem = useCartStore(state => state.addToCart); // Changed from addItem to addToCart (which handles quantities properly)
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const addToCart = useCartStore(state => state.addToCart);
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
-
-  const fetchHistory = async () => {
-    try {
-      const data = await getStudentOrders();
-      // Filter only completed or cancelled for history
-      const historyOrders = data.filter(o => ['COMPLETED', 'CANCELLED'].includes(o.status));
-      
-      // Group by date
-      const grouped = {};
-      historyOrders.forEach(order => {
-        const dateStr = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        if (!grouped[dateStr]) grouped[dateStr] = [];
-        grouped[dateStr].push(order);
-      });
-
-      const historyArray = Object.keys(grouped).map(date => ({
-        date,
-        orders: grouped[date]
-      }));
-
-      // Sort by latest date first (simple approximation assuming string sort matches date order loosely, or we should sort orders before grouping)
-      historyOrders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-      setHistory(historyArray);
-    } catch (err) {
-      console.error("Failed to fetch history:", err);
-      setError("Failed to load order history.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleReorder = (items, canteenId) => {
-    // Add all items from the past order to the current cart
+  const handleReorder = (items) => {
     items.forEach(item => {
-      // Create a mock menu item format to add
       const menuItem = {
-        id: item.menu_item_id, // backend response has menu_item_id
-        name: `Item ${item.menu_item_id.substring(0,4)}`, // we don't have name in order item response currently
-        price: parseFloat(item.unit_price) || 0,
-        image: 'https://images.unsplash.com/photo-1599487405620-8e10629a2016?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        canteenId: canteenId
+        id: item.id || Math.random().toString(),
+        name: item.name,
+        price: item.price,
+        image: 'https://images.unsplash.com/photo-1599487405620-8e10629a2016?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
       };
-      
-      for(let i=0; i<item.quantity; i++) {
-        addItem(menuItem, canteenId);
+      for(let i = 0; i < item.quantity; i++) {
+        addToCart(menuItem, item.canteenId || 'c1');
       }
     });
-    alert('Items added to your cart!');
   };
 
   return (
