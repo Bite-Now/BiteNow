@@ -83,14 +83,11 @@ async def get_staff_orders(
     db: AsyncSession = Depends(get_db),
     service: OrderService = Depends(get_order_service)
 ):
-    # Find canteen_id for staff
-    stmt = select(StaffAssignment).where(StaffAssignment.user_id == user.id)
-    res = await db.execute(stmt)
-    assignment = res.scalars().first()
-    if not assignment:
+    # Use canteen_id directly from the User model
+    if not user.canteen_id:
         raise HTTPException(status_code=403, detail="Not assigned to any canteen")
         
-    return await service.get_staff_orders(assignment.canteen_id)
+    return await service.get_staff_orders(user.canteen_id)
 
 @staff_router.patch("/{order_id}/ready", response_model=OrderResponse)
 async def ready_staff_order(
@@ -99,15 +96,12 @@ async def ready_staff_order(
     db: AsyncSession = Depends(get_db),
     service: OrderService = Depends(get_order_service)
 ):
-    # Find canteen_id for staff
-    stmt = select(StaffAssignment).where(StaffAssignment.user_id == user.id)
-    res = await db.execute(stmt)
-    assignment = res.scalars().first()
-    if not assignment:
+    # Use canteen_id directly from the User model
+    if not user.canteen_id:
         raise HTTPException(status_code=403, detail="Not assigned to any canteen")
         
     order = await service.get_order_by_id(order_id)
-    if not order or order.canteen_id != assignment.canteen_id:
+    if not order or order.canteen_id != user.canteen_id:
         raise HTTPException(status_code=404, detail="Order not found")
         
     return await service.mark_ready(order_id)

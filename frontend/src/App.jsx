@@ -75,6 +75,8 @@ function App() {
         {/* Protected Routes - STAFF */}
         <Route element={<ProtectedRoute allowedRoles={['STAFF']}><MainLayout /></ProtectedRoute>}>
           <Route path="/staff" element={<VendorOrders />} />
+          <Route path="/staff/orders" element={<VendorOrders />} />
+          <Route path="/staff/products" element={<VendorProducts />} />
         </Route>
 
         {/* Protected Routes - OWNER (Vendor) */}
