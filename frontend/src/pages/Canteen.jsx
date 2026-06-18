@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/useCartStore';
 import { useWalletStore } from '../store/useWalletStore';
-import api from '../services/api';
+import { getCanteenMenu } from '../services/menuApi';
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80';
 
@@ -28,9 +28,9 @@ const Canteen = () => {
     useEffect(() => {
         const fetchCanteenMenu = async () => {
             try {
-                const response = await api.get(`/canteens/${id}/menu`);
-                setCanteenData(response.data);
-                const categories = Object.keys(response.data.menu);
+                const data = await getCanteenMenu(id);
+                setCanteenData(data);
+                const categories = Object.keys(data.menu);
                 if (categories.length > 0) {
                     setActiveCategory(categories[0]);
                 }

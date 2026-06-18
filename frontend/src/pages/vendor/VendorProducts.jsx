@@ -1,16 +1,17 @@
-import React, { useState, useRef } from 'react';
-import { mockVendorProducts } from '../../data/mockVendorData';
+import React, { useState, useRef, useEffect } from 'react';
 import CollapsibleSection from '../../components/common/CollapsibleSection';
 import GlassModal from '../../components/ui/GlassModal';
 import GlassInput from '../../components/ui/GlassInput';
 import GlassButton from '../../components/ui/GlassButton';
 import GoldenGlowButton from '../../components/ui/GoldenGlowButton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCurrentCanteen } from '../../hooks/useCurrentCanteen';
+import { getCanteenMenu, createMenuItem, updateMenuItem, deleteMenuItem, createDailySpecial, updateDailySpecial, deleteDailySpecial } from '../../services/menuApi';
 
 // --- Add Product Modal ---
 const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting }) => {
     if (!isOpen) return null;
-    
+
     const [name, setName] = useState('');
     const [desc, setDesc] = useState('');
     const [price, setPrice] = useState('');
@@ -19,54 +20,54 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting })
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!name || !price) return;
-        
+
         try {
             await onAdd({
                 name,
                 description: desc || undefined,
                 price: parseFloat(price.replace('₹', '')),
                 image_url: image || undefined,
-                category: categoryName !== 'special' ? categoryName : undefined
+                category: categoryName !== 'special' ? categoryName : undefined,
+                is_available: true
             });
-            
+
             onClose();
             setName(''); setDesc(''); setPrice(''); setImage('');
         } catch (err) {
-            // Error handled in onAdd
+            console.error(err);
         }
     };
 
     return (
-        <GlassModal 
-            isOpen={isOpen} 
+        <GlassModal
+            isOpen={isOpen}
             onClose={onClose}
             title={`Add to ${categoryName || 'Menu'}`}
         >
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <GlassInput 
-                    label="Image URL" 
+                <GlassInput
+                    label="Image URL"
                     value={image}
                     onChange={(e) => setImage(e.target.value)}
                 />
-                
-                <GlassInput 
-                    label="Product Name" 
-                    required 
+
+                <GlassInput
+                    label="Product Name"
+                    required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                 />
 
-                <GlassInput 
-                    label="Price" 
-                    required 
+                <GlassInput
+                    label="Price"
+                    required
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                 />
 
-                {/* Using standard textarea styled similarly since GlassInput is for text inputs */}
                 <div className="relative">
                     <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-xl border border-white/10 pointer-events-none transition-colors peer-focus:border-white/30"></div>
-                    <textarea 
+                    <textarea
                         className="peer relative w-full bg-transparent text-white placeholder-white/40 focus:outline-none focus:ring-0 text-sm px-4 py-3 resize-none h-20"
                         placeholder="Description"
                         value={desc}
@@ -79,8 +80,8 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting })
                         Cancel
                     </button>
                     <div className="flex-1">
-                        <GlassButton type="submit">
-                            Add Product
+                        <GlassButton type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? 'Adding...' : 'Add Product'}
                         </GlassButton>
                     </div>
                 </div>
@@ -90,7 +91,7 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting })
 };
 
 // --- Product Card ---
-const ProductCard = ({ item, isSpecial }) => {
+const ProductCard = ({ item, isSpecial, onToggleStock, onDelete }) => {
     return (
         <div className="bg-surface-container rounded-xl p-2.5 flex gap-3 shadow-sm border border-outline-variant/20 mb-2 hover:border-outline-variant/40 transition-all group">
             {/* Left Side: Content */}
@@ -98,7 +99,7 @@ const ProductCard = ({ item, isSpecial }) => {
                 <h4 className="text-on-surface font-bold text-[15px] truncate">{item.name}</h4>
                 <p className="text-on-surface-variant text-[12px] mt-0.5 line-clamp-2 leading-snug">{item.description}</p>
                 <div className="mt-auto pt-1.5 flex items-center gap-2">
-                    <p className="text-on-surface font-bold text-[14px]">{item.price}</p>
+                    <p className="text-on-surface font-bold text-[14px]">₹{item.price}</p>
                     {isSpecial && (
                         <span className="text-primary text-[10px] font-bold uppercase tracking-wider bg-primary/10 px-1.5 py-0.5 rounded">Special</span>
                     )}
@@ -107,27 +108,32 @@ const ProductCard = ({ item, isSpecial }) => {
 
             {/* Right Side: Image & Toggle */}
             <div className="flex flex-col items-end justify-between shrink-0">
+                <div className="flex items-center gap-2 mb-2">
+                    <button onClick={() => onDelete(item.id)} className="text-error/80 hover:text-error p-1 rounded-full hover:bg-error/10 transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                    </button>
+                </div>
                 <div className="w-[68px] h-[68px] rounded-lg overflow-hidden bg-surface shadow-sm border border-outline-variant/10">
-                    {item.image ? (
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    {item.image_url ? (
+                        <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
                             <span className="material-symbols-outlined text-2xl">restaurant</span>
                         </div>
                     )}
                 </div>
-                
+
                 {/* Visibility Toggle Switch */}
                 <label className="flex items-center cursor-pointer mt-2" onClick={(e) => e.stopPropagation()}>
                     <div className="relative">
-                        <input 
-                            type="checkbox" 
-                            className="sr-only" 
-                            checked={item.inStock} 
-                            onChange={() => onToggleStock(item.id)} 
+                        <input
+                            type="checkbox"
+                            className="sr-only"
+                            checked={item.is_available}
+                            onChange={() => onToggleStock(item.id, !item.is_available)}
                         />
-                        <div className={`block w-10 h-5 rounded-full transition-colors ${item.inStock ? 'bg-[#22c55e]' : 'bg-surface-variant'}`}></div>
-                        <div className={`dot absolute left-[2px] top-[2px] bg-white w-4 h-4 rounded-full transition-transform ${item.inStock ? 'transform translate-x-5' : ''}`}></div>
+                        <div className={`block w-10 h-5 rounded-full transition-colors ${item.is_available ? 'bg-[#22c55e]' : 'bg-surface-variant'}`}></div>
+                        <div className={`dot absolute left-[2px] top-[2px] bg-white w-4 h-4 rounded-full transition-transform ${item.is_available ? 'transform translate-x-5' : ''}`}></div>
                     </div>
                 </label>
             </div>
@@ -137,26 +143,49 @@ const ProductCard = ({ item, isSpecial }) => {
 
 const VendorProducts = () => {
     const { canteenId, isLoaded } = useCurrentCanteen();
-    const [menuData, setMenuData] = useState({ specials: [], categories: [] });
+    const [products, setProducts] = useState({ specialMenu: [], categories: [] });
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategoryId, setActiveCategoryId] = useState('special');
-    const [modalConfig, setModalConfig] = useState({ isOpen: false, categoryId: null, categoryName: '' });
-    const [isLoading, setIsLoading] = useState(true);
-    
-    // Category addition state
+    const [modalConfig, setModalConfig] = useState({ isOpen: false, categoryName: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const [isAddingCategory, setIsAddingCategory] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
 
     const tabRefs = useRef({});
     const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
-    React.useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 800);
-        return () => clearTimeout(timer);
-    }, []);
+    const fetchMenu = async () => {
+        if (!canteenId) return;
+        try {
+            const data = await getCanteenMenu(canteenId);
+            const cats = Object.keys(data.menu).map(catName => ({
+                id: catName,
+                name: catName,
+                items: data.menu[catName]
+            }));
 
-    React.useEffect(() => {
+            setProducts({
+                specialMenu: data.specials || [],
+                categories: cats
+            });
+        } catch (err) {
+            console.error("Failed to fetch menu:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isLoaded && canteenId) {
+            fetchMenu();
+        } else if (isLoaded) {
+            setIsLoading(false);
+        }
+    }, [isLoaded, canteenId]);
+
+    useEffect(() => {
         const el = tabRefs.current[activeCategoryId];
         if (el) {
             setIndicatorStyle({
@@ -164,59 +193,49 @@ const VendorProducts = () => {
                 width: el.offsetWidth,
             });
         }
-    }, [activeCategoryId]);
-
-    const fetchMenu = async () => {
-        if (!canteenId) return;
-        try {
-            const response = await api.get(`/canteens/${canteenId}/menu`);
-            const data = response.data;
-            const categories = Object.keys(data.menu).map(categoryName => ({
-                name: categoryName,
-                items: data.menu[categoryName]
-            }));
-            
-            setMenuData({
-                specials: data.specials || [],
-                categories: categories
-            });
-        } catch (err) {
-            console.error("Failed to fetch owner menu:", err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (isLoaded) {
-            if (canteenId) {
-                fetchMenu();
-            } else {
-                setIsLoading(false);
-            }
-        }
-    }, [isLoaded, canteenId]);
+    }, [activeCategoryId, products.categories.length]);
 
     const handleAddProduct = async (newItemPayload) => {
         setIsSubmitting(true);
         try {
             if (modalConfig.categoryName === 'special') {
-                await api.post(`/owner/specials?canteen_id=${canteenId}`, newItemPayload);
+                await createDailySpecial(canteenId, newItemPayload);
             } else {
-                await api.post(`/owner/menu?canteen_id=${canteenId}`, newItemPayload);
+                await createMenuItem(canteenId, newItemPayload);
             }
             await fetchMenu();
         } catch (err) {
             console.error("Failed to add product:", err);
             alert("Failed to add product.");
-            throw err;
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const openAddModal = (categoryName) => {
-        setModalConfig({ isOpen: true, categoryName });
+    const toggleStock = async (itemId, newAvailableStatus) => {
+        try {
+            if (activeCategoryId === 'special') {
+                await updateDailySpecial(itemId, { is_available: newAvailableStatus });
+            } else {
+                await updateMenuItem(itemId, { is_available: newAvailableStatus });
+            }
+            fetchMenu();
+        } catch (err) {
+            console.error("Failed to update availability", err);
+        }
+    };
+
+    const handleDelete = async (itemId) => {
+        try {
+            if (activeCategoryId === 'special') {
+                await deleteDailySpecial(itemId);
+            } else {
+                await deleteMenuItem(itemId);
+            }
+            fetchMenu();
+        } catch (err) {
+            console.error("Failed to delete", err);
+        }
     };
 
     const handleAddCategory = (e) => {
@@ -227,13 +246,12 @@ const VendorProducts = () => {
             return;
         }
 
-        const newId = 'cat_' + Date.now();
         setProducts(prev => ({
             ...prev,
-            categories: [...prev.categories, { id: newId, name: trimmedName, items: [] }]
+            categories: [...prev.categories, { id: trimmedName, name: trimmedName, items: [] }]
         }));
-        
-        setActiveCategoryId(newId);
+
+        setActiveCategoryId(trimmedName);
         setIsAddingCategory(false);
         setNewCategoryName('');
     };
@@ -245,62 +263,55 @@ const VendorProducts = () => {
 
     return (
         <div className="flex flex-col gap-4 w-full pb-32 pt-4 px-3 relative bg-background min-h-screen">
-            
-            {/* Header */}
             <div className="flex justify-between items-center px-1 mt-2">
                 <div className="flex items-center gap-3">
-                    
                     <h1 className="text-xl font-bold text-on-surface ml-4 ">Products</h1>
                 </div>
-               
             </div>
 
-            {/* Search Bar */}
             <div className="relative px-1 mt-1">
                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
-                <input 
-                    type="text" 
-                    placeholder="Search" 
+                <input
+                    type="text"
+                    placeholder="Search"
                     className="w-full bg-surface-container border border-outline-variant/30 rounded-xl py-2.5 pl-11 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant/70 outline-none focus:border-primary"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
 
-            {/* Category Navigation System */}
             <div className="relative w-full mt-4 flex flex-col gap-2">
-                {/* Separate Add Category Action - Above Tabs */}
                 <div className="flex justify-end px-2 h-[34px]">
                     {isAddingCategory ? (
-                        <form 
-                            onSubmit={handleAddCategory} 
+                        <form
+                            onSubmit={handleAddCategory}
                             className="flex items-center gap-1 bg-surface-container rounded-lg border border-primary/50 overflow-hidden shadow-sm"
                         >
-                            <input 
-                                type="text" 
+                            <input
+                                type="text"
                                 autoFocus
                                 value={newCategoryName}
                                 onChange={(e) => setNewCategoryName(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Escape' && cancelAddCategory()}
-                                placeholder="New category..." 
+                                placeholder="New category..."
                                 className="bg-transparent text-sm text-on-surface px-3 py-1.5 outline-none w-[120px] placeholder:text-on-surface-variant/50"
                             />
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={cancelAddCategory}
                                 className="text-on-surface-variant hover:text-error transition-colors px-1"
                             >
                                 <span className="material-symbols-outlined text-[16px]">close</span>
                             </button>
-                            <button 
-                                type="submit" 
+                            <button
+                                type="submit"
                                 className="text-primary hover:text-primary-container transition-colors pr-2 pl-1"
                             >
                                 <span className="material-symbols-outlined text-[16px]">check_circle</span>
                             </button>
                         </form>
                     ) : (
-                        <button 
+                        <button
                             onClick={() => setIsAddingCategory(true)}
                             className="flex items-center gap-1 text-xs font-bold text-on-surface-variant hover:text-primary transition-colors py-1.5 px-3 rounded-lg border border-outline-variant/10 bg-surface-container"
                         >
@@ -311,45 +322,37 @@ const VendorProducts = () => {
                 </div>
 
                 <div className="relative w-full">
-                    {/* Left Edge Fade */}
                     <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-background to-transparent z-[35] pointer-events-none" />
-                    {/* Right Edge Fade */}
                     <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-[35] pointer-events-none" />
 
                     <div className="relative flex overflow-x-auto no-scrollbar gap-1 px-2 pt-2 pb-3 snap-x">
-
-                        {/* Single shared indicator — rendered ONCE, animates position */}
                         <motion.div
                             className="absolute top-0 bottom-3 bg-[#1c1b1b] rounded-t-[16px] border border-outline-variant/20 border-b-0 z-0 pointer-events-none"
                             animate={indicatorStyle}
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         />
 
-                        {/* Special Tab */}
                         <button
                             ref={el => tabRefs.current['special'] = el}
                             onClick={() => setActiveCategoryId('special')}
-                            className={`relative px-5 py-3 pb-5 text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 snap-start z-10 ${
-                                activeCategoryId === 'special'
+                            className={`relative px-5 py-3 pb-5 text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 snap-start z-10 ${activeCategoryId === 'special'
                                     ? 'text-primary'
                                     : 'text-on-surface-variant hover:text-on-surface'
-                            }`}
+                                }`}
                         >
                             <span className="material-symbols-outlined text-[18px]">star</span>
                             Today's Special
                         </button>
 
-                        {/* Dynamic Categories */}
                         {products.categories.map(category => (
                             <button
                                 key={category.id}
                                 ref={el => tabRefs.current[category.id] = el}
                                 onClick={() => setActiveCategoryId(category.id)}
-                                className={`relative px-5 py-3 pb-5 text-sm font-bold whitespace-nowrap transition-colors snap-start z-10 ${
-                                    activeCategoryId === category.id
+                                className={`relative px-5 py-3 pb-5 text-sm font-bold whitespace-nowrap transition-colors snap-start z-10 ${activeCategoryId === category.id
                                         ? 'text-[#e5e2e1]'
                                         : 'text-on-surface-variant hover:text-on-surface'
-                                }`}
+                                    }`}
                             >
                                 {category.name}
                             </button>
@@ -358,18 +361,16 @@ const VendorProducts = () => {
                 </div>
             </div>
 
-            {/* Active Category Content Container */}
             <div className="bg-[#1c1b1b] rounded-[20px] border border-outline-variant/20 p-4 shadow-lg min-h-[400px] relative z-20 mx-2 -mt-3">
-                {/* Sub-header with Title */}
                 <div className="flex justify-between items-end mb-4 px-1 pb-2 border-b border-outline-variant/10">
                     <div>
                         <h2 className="text-on-surface font-bold text-lg">
                             {activeCategoryId === 'special' ? "Today's Special" : products.categories.find(c => c.id === activeCategoryId)?.name}
                         </h2>
                         <p className="text-on-surface-variant text-xs mt-0.5">
-                            {activeCategoryId === 'special' 
-                                ? `${products.specialMenu.length} Active Products` 
-                                : `${products.categories.find(c => c.id === activeCategoryId)?.items.filter(i => i.inStock).length || 0} Active Products`
+                            {activeCategoryId === 'special'
+                                ? `${products.specialMenu.length} Active Products`
+                                : `${products.categories.find(c => c.id === activeCategoryId)?.items.filter(i => i.is_available).length || 0} Active Products`
                             }
                         </p>
                     </div>
@@ -389,11 +390,15 @@ const VendorProducts = () => {
                 ) : (
                     <>
                         {(() => {
-                            const activeItems = activeCategoryId === 'special' 
-                                ? products.specialMenu 
+                            const activeItems = activeCategoryId === 'special'
+                                ? products.specialMenu
                                 : products.categories.find(c => c.id === activeCategoryId)?.items || [];
-                            
-                            const isEmpty = activeItems.length === 0;
+
+                            const filteredItems = activeItems.filter(item =>
+                                item.name.toLowerCase().includes(searchQuery.toLowerCase())
+                            );
+
+                            const isEmpty = filteredItems.length === 0;
 
                             return (
                                 <AnimatePresence mode="wait">
@@ -406,11 +411,11 @@ const VendorProducts = () => {
                                         className="flex flex-col h-full"
                                     >
                                         {!isEmpty && (
-                                            <GoldenGlowButton 
-                                                onClick={() => openAddModal(
-                                                    activeCategoryId, 
-                                                    activeCategoryId === 'special' ? "Today's Special" : products.categories.find(c => c.id === activeCategoryId)?.name
-                                                )}
+                                            <GoldenGlowButton
+                                                onClick={() => setModalConfig({
+                                                    isOpen: true,
+                                                    categoryName: activeCategoryId === 'special' ? 'special' : activeCategoryId
+                                                })}
                                                 className="w-full mb-4 shrink-0"
                                             >
                                                 <span className="material-symbols-outlined text-[20px]">add</span>
@@ -425,15 +430,13 @@ const VendorProducts = () => {
                                                         {activeCategoryId === 'special' ? 'star' : 'category'}
                                                     </span>
                                                 </div>
-                                                <h3 className="text-on-surface font-bold text-lg mb-2">No products yet</h3>
-                                                <p className="text-on-surface-variant text-sm mb-6 max-w-[250px]">
-                                                    Start building your menu by adding your first product to this category.
-                                                </p>
-                                                <GoldenGlowButton 
-                                                    onClick={() => openAddModal(
-                                                        activeCategoryId, 
-                                                        activeCategoryId === 'special' ? "Today's Special" : products.categories.find(c => c.id === activeCategoryId)?.name
-                                                    )}
+                                                <h3 className="text-on-surface font-bold text-lg mb-2">No products found</h3>
+                                                <GoldenGlowButton
+                                                    onClick={() => setModalConfig({
+                                                        isOpen: true,
+                                                        categoryName: activeCategoryId === 'special' ? 'special' : activeCategoryId
+                                                    })}
+                                                    className="mt-4"
                                                 >
                                                     <span className="material-symbols-outlined text-lg mr-1">add</span>
                                                     Add Product
@@ -441,13 +444,13 @@ const VendorProducts = () => {
                                             </div>
                                         ) : (
                                             <div className="flex flex-col gap-2">
-                                                {activeItems.map(item => (
-                                                    <ProductCard 
-                                                        key={item.id} 
-                                                        item={item} 
-                                                        isSpecial={activeCategoryId === 'special'} 
+                                                {filteredItems.map(item => (
+                                                    <ProductCard
+                                                        key={item.id}
+                                                        item={item}
+                                                        isSpecial={activeCategoryId === 'special'}
                                                         onToggleStock={toggleStock}
-                                                        onChangeCap={changeCap}
+                                                        onDelete={handleDelete}
                                                     />
                                                 ))}
                                             </div>
@@ -460,8 +463,7 @@ const VendorProducts = () => {
                 )}
             </div>
 
-            {/* Modal */}
-            <AddProductModal 
+            <AddProductModal
                 isOpen={modalConfig.isOpen}
                 categoryName={modalConfig.categoryName}
                 onClose={() => setModalConfig({ isOpen: false, categoryName: '' })}

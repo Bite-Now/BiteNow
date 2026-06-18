@@ -1,13 +1,13 @@
-import { useUser } from "@clerk/clerk-react";
+import { useAuth } from './useAuth';
 
 export function useCurrentCanteen() {
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { currentUser, loading, isAuthenticated } = useAuth();
 
-  if (!isLoaded) return { canteenId: null, isLoaded, isSignedIn };
-  if (!isSignedIn) return { canteenId: null, isLoaded, isSignedIn };
+  if (loading) return { canteenId: null, isLoaded: false, isSignedIn: false };
+  if (!isAuthenticated) return { canteenId: null, isLoaded: true, isSignedIn: false };
 
-  // Extract canteen_id from public metadata
-  const canteenId = user?.publicMetadata?.canteen_id || null;
+  // Extract canteen_id from database user record
+  const canteenId = currentUser?.canteen_id || null;
   
-  return { canteenId, isLoaded, isSignedIn };
+  return { canteenId, isLoaded: true, isSignedIn: true };
 }

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../../store/useCartStore';
 import { useAuth } from '@clerk/clerk-react';
 import { mockPaymentSuccess, mockPaymentFailed } from '../../services/ordersApi';
 
 const MockPayment = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const orderId = location.state?.orderId;
     const { items, getTotalPrice, clearCart } = useCartStore();
     const { getToken } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -18,14 +20,9 @@ const MockPayment = () => {
         setError(null);
 
         try {
-            const canteenId = items.length > 0 ? items[0].canteenId : null;
-            if (!canteenId) throw new Error("Cart is empty");
+            if (!orderId) throw new Error("Order ID missing. Please go back to cart.");
 
-            const payload = {
-                canteen_id: canteenId,
-                items: items.map(i => ({ menu_item_id: i.id, quantity: i.quantity })),
-                idempotency_key: crypto.randomUUID()
-            };
+            const payload = { order_id: orderId };
 
             let data;
             if (isSuccess) {

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { initialPendingBatches, initialSuccessfulBatches } from '../../data/mockVendorData';
+import React, { useState, useEffect } from 'react';
 import GoldenGlowButton from '../../components/ui/GoldenGlowButton';
 import { useNotificationStore } from '../../store/useNotificationStore';
+import { useAuth } from '../../hooks/useAuth';
+import { getOwnerOrders, getStaffOrders, markOrderReadyOwner, markOrderReadyStaff } from '../../services/ordersApi';
 
 const BatchCard = ({ batch, onMarkReady, isPending }) => {
     return (
@@ -51,27 +52,75 @@ const BatchCard = ({ batch, onMarkReady, isPending }) => {
 };
 
 const VendorOrders = () => {
-    const { getToken } = useAuth();
+    const { role } = useAuth();
     const [activeTab, setActiveTab] = useState('pending');
-    const [pendingBatches, setPendingBatches] = useState(initialPendingBatches);
-    const [successfulBatches, setSuccessfulBatches] = useState(initialSuccessfulBatches);
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const { addNotification } = useNotificationStore();
 
-    const handleMarkReady = (batchId) => {
-        const batchToMove = pendingBatches.find(b => b.id === batchId);
-        if (batchToMove) {
-            setPendingBatches(prev => prev.filter(b => b.id !== batchId));
-            setSuccessfulBatches(prev => [
-                { ...batchToMove, completedAt: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }, 
-                ...prev
-            ]);
+    const fetchOrders = async () => {
+        try {
+            let data;
+            if (role === 'STAFF') {
+                data = await getStaffOrders();
+            } else {
+                data = await getOwnerOrders();
+            }
+            setOrders(data);
+            setError(null);
+        } catch (err) {
+            console.error("Failed to fetch vendor orders:", err);
+            setError("Failed to load orders");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!role) return;
+        fetchOrders();
+        const interval = setInterval(fetchOrders, 10000); // Poll every 10s
+        return () => clearInterval(interval);
+    }, [role]);
+
+    const handleMarkReady = async (batchId) => {
+        try {
+            if (role === 'STAFF') {
+                await markOrderReadyStaff(batchId);
+            } else {
+                await markOrderReadyOwner(batchId);
+            }
+            
+            // Optimistic update
+            setOrders(prev => prev.map(o => o.id === batchId ? { ...o, status: 'READY' } : o));
+            
             addNotification({
                 type: 'order',
                 title: 'Order Ready!',
-                message: `Batch ${batchId} (${batchToMove.itemName}) is ready for pickup.`
+                message: `Order ${batchId.substring(0,8)} is ready for pickup.`
+            });
+        } catch (err) {
+            console.error("Failed to mark order ready", err);
+            addNotification({
+                type: 'error',
+                title: 'Update Failed',
+                message: err.response?.data?.detail || 'Could not mark order ready'
             });
         }
     };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center mt-20">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return <div className="text-center mt-20 text-error">{error}</div>;
+    }
 
     const pendingBatches = orders.filter(o => o.status === 'PAID' || o.status === 'PREPARING');
     const successfulBatches = orders.filter(o => o.status === 'READY');

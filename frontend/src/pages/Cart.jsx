@@ -1,27 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/useCartStore';
 import { useNotificationStore } from '../store/useNotificationStore';
-
+import { createOrder } from '../services/ordersApi';
 
 const Cart = () => {
     const navigate = useNavigate();
     const { items, addToCart, removeFromCart, clearCart, getTotalPrice } = useCartStore();
     const { addNotification } = useNotificationStore();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
         if (items.length === 0) return;
         
-        addNotification({
-            type: 'order',
-            title: 'New Order Received',
-            message: `Order placed for ₹${getTotalPrice()}`
-        });
-
-        clearCart();
-        // Since we don't have a backend to actually push the order to MOCK_ORDERS,
-        // we simulate success and navigate to the live tracker.
-        navigate('/orders');
+        setIsSubmitting(true);
+        try {
+            const canteenId = items[0].canteenId;
+            const payload = {
+                canteen_id: canteenId,
+                items: items.map(i => ({ menu_item_id: i.id, quantity: i.quantity }))
+            };
+            
+            const data = await createOrder(payload);
+            const orderId = data.order_id;
+            
+            // Note: we don't clearCart here yet, we do it after successful payment
+            
+            navigate('/checkout', { state: { orderId } });
+        } catch (err) {
+            console.error("Failed to create order:", err);
+            addNotification({
+                type: 'error',
+                title: 'Order Failed',
+                message: err.response?.data?.detail || 'Could not place order'
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -84,10 +99,11 @@ const Cart = () => {
 
                             <button 
                                 onClick={handleCheckout}
-                                className="w-full py-md bg-primary-container text-on-primary-container font-label-md text-label-md rounded-xl flex justify-center items-center gap-2 hover:bg-primary hover:text-on-primary transition-colors active:scale-[0.98] glow-effect"
+                                disabled={isSubmitting}
+                                className={`w-full py-md bg-primary-container text-on-primary-container font-label-md text-label-md rounded-xl flex justify-center items-center gap-2 transition-colors active:scale-[0.98] ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-primary hover:text-on-primary glow-effect'}`}
                             >
                                 <span className="material-symbols-outlined text-[20px]">shopping_cart_checkout</span>
-                                Proceed to Pay
+                                {isSubmitting ? 'Processing...' : 'Proceed to Pay'}
                             </button>
                         </div>
                     </>

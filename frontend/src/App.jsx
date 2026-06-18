@@ -15,9 +15,10 @@ import CanteenSettings from './pages/settings/CanteenSettings';
 import Unauthorized from './pages/Unauthorized';
 import MockPayment from './pages/student/MockPayment';
 import MainLayout from './components/layout/MainLayout';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { RoleRedirect } from './components/auth/RoleRedirect';
+import ProtectedRoute from './components/ProtectedRoute';
+import RoleRedirect from './components/RoleRedirect';
 import { AuthProvider } from './context/AuthContext';
+import { setupInterceptors } from './services/api';
 
 // Vendor Pages
 import VendorDashboard from './pages/vendor/VendorDashboard';
@@ -33,6 +34,20 @@ const AdminDashboard = () => <div className="p-8 text-white">Admin Dashboard</di
 
 function App() {
   
+  // We cannot easily get `navigate` here since we are outside BrowserRouter or we can pass it later.
+  // Actually, setting up interceptors should be done inside a child component or with a fallback.
+  // We'll call setupInterceptors inside a useEffect or just let the interceptor use window.Clerk.
+  React.useEffect(() => {
+    // window.Clerk.session.getToken is available after load
+    const getToken = async () => {
+      if (window.Clerk && window.Clerk.session) {
+        return await window.Clerk.session.getToken();
+      }
+      return null;
+    };
+    setupInterceptors(getToken, null);
+  }, []);
+
   return (
     <AuthProvider>
       <Routes>
