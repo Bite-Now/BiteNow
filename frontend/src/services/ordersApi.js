@@ -1,6 +1,10 @@
 import api from './api';
 
 
+export const createOrder = async (payload) => {
+    const response = await api.post('/orders', payload);
+    return response.data;
+};
 
 export const mockPaymentSuccess = async (payload) => {
     const response = await api.post('/payments/mock-success', payload);
@@ -39,6 +43,11 @@ export const getOwnerOrders = async () => {
 
 export const markOrderReadyOwner = async (orderId) => {
     const response = await api.patch(`/owner/orders/${orderId}/ready`);
+    return response.data;
+};
+
+export const getDashboardStats = async () => {
+    const response = await api.get('/owner/dashboard/stats');
     return response.data;
 };
 

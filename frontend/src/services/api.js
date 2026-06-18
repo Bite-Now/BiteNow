@@ -7,43 +7,50 @@ const api = axios.create({
   },
 });
 
-// Request Interceptor: Attach Clerk JWT
-api.interceptors.request.use(
-  async (config) => {
-    // Attempt to grab the active token securely from Clerk
-    // The window.Clerk object is available globally once Clerk React SDK loads
-    if (window.Clerk && window.Clerk.session) {
-      try {
-        const token = await window.Clerk.session.getToken();
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      } catch (err) {
-        console.error("Failed to retrieve Clerk token:", err);
-      }
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+export const setupInterceptors = (getToken, navigate) => {
+  api.interceptors.request.clear();
+  api.interceptors.response.clear();
 
-// Response Interceptor: Handle Global Auth Errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response) {
-      if (error.response.status === 401) {
-        // Token expired or missing -> Redirection handled mostly by Clerk guards,
-        // but we can enforce logging out or returning error.
-        // We do not auto-redirect via window.location to prevent loops if Clerk is actively syncing.
-        console.warn("Unauthorized API call. Token may be expired.");
-      } else if (error.response.status === 403) {
-        console.warn("Forbidden API call. Insufficient permissions.");
-        window.location.href = '/unauthorized';
+  api.interceptors.request.use(
+    async (config) => {
+      if (getToken) {
+        try {
+          const token = await getToken();
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
+        } catch (err) {
+          console.error("Failed to retrieve Clerk token:", err);
+        }
       }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+
+  api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response) {
+        if (error.response.status === 401) {
+          console.warn("Unauthorized API call. Redirecting to login.");
+          if (window.Clerk) {
+            window.Clerk.redirectToSignIn();
+          } else {
+            window.location.href = '/';
+          }
+        } else if (error.response.status === 403) {
+          console.warn("Forbidden API call. Insufficient permissions.");
+          if (navigate) {
+            navigate('/unauthorized');
+          } else {
+            window.location.href = '/unauthorized';
+          }
+        }
+      }
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
-);
+  );
+};
 
 export default api;

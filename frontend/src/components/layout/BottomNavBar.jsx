@@ -18,15 +18,22 @@ const VENDOR_NAV_ITEMS = [
     { icon: 'group', id: 'vendor_staff', path: '/vendor/staff' }
 ];
 
+const STAFF_NAV_ITEMS = [
+    { icon: 'receipt_long', id: 'staff_orders', path: '/staff/orders' },
+    { icon: 'inventory_2', id: 'staff_products', path: '/staff/products' }
+];
+
 const BottomNavBar = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const scrollDirection = useScrollDirection();
     const { role } = useAuth();
-    
-    if (role === 'STAFF') return null;
 
-    const currentNavItems = role === 'OWNER' ? VENDOR_NAV_ITEMS : STUDENT_NAV_ITEMS;
+    const currentNavItems = role === 'OWNER' 
+        ? VENDOR_NAV_ITEMS 
+        : role === 'STAFF' 
+        ? STAFF_NAV_ITEMS 
+        : STUDENT_NAV_ITEMS;
     const mainTabPaths = currentNavItems.map(item => item.path);
     
     // Spotlight memory state

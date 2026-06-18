@@ -61,3 +61,13 @@ class AuditLog(Base):
     resource_id = Column(UUID(as_uuid=True), nullable=True)
     metadata_field = Column("metadata", JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Wallet(Base):
+    __tablename__ = "wallets"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
+    monthly_budget_limit = Column(Integer, default=5000, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+

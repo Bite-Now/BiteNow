@@ -6,17 +6,35 @@ import { getStudentOrders } from '../services/ordersApi';
 const OrderHistory = () => {
   const navigate = useNavigate();
   const addToCart = useCartStore(state => state.addToCart);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [history, setHistory] = useState([]);
 
-  const handleReorder = (items) => {
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const data = await getStudentOrders();
+        const pastOrders = data.filter(o => ['COMPLETED', 'CANCELLED', 'COLLECTED'].includes(o.status));
+        setHistory([{ date: "Past Orders", orders: pastOrders }]);
+      } catch (err) {
+        setError("Failed to fetch history");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, []);
+
+  const handleReorder = (items, canteenId) => {
     items.forEach(item => {
       const menuItem = {
-        id: item.id || Math.random().toString(),
-        name: item.name,
-        price: item.price,
+        id: item.menu_item_id || Math.random().toString(),
+        name: `Item ${item.menu_item_id?.substring(0,4)}`,
+        price: item.unit_price,
         image: 'https://images.unsplash.com/photo-1599487405620-8e10629a2016?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
       };
       for(let i = 0; i < item.quantity; i++) {
-        addToCart(menuItem, item.canteenId || 'c1');
+        addToCart(menuItem, canteenId || 'c1');
       }
     });
   };

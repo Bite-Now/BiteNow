@@ -4,7 +4,7 @@ from typing import List
 from uuid import UUID
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, require_owner
+from app.core.dependencies import get_current_user, require_staff
 from app.modules.auth.models import User
 from app.modules.menu.repository import MenuRepository
 from app.modules.menu.service import MenuService
@@ -48,7 +48,7 @@ async def get_specials(
     return await service.get_canteen_specials(canteen_id)
 
 # Owner Protected Endpoints
-owner_router = APIRouter(prefix="/owner", tags=["Owner Menu"], dependencies=[Depends(require_owner)])
+owner_router = APIRouter(prefix="/owner", tags=["Owner Menu"], dependencies=[Depends(require_staff)])
 
 @owner_router.post("/menu", response_model=MenuItemResponse, status_code=status.HTTP_201_CREATED)
 async def create_menu_item(

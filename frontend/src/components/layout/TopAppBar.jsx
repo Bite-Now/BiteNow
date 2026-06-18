@@ -6,7 +6,7 @@ import { useWalletStore } from '../../store/useWalletStore';
 
 const TopAppBar = () => {
     const location = useLocation();
-    const { currentBalance } = useWalletStore();
+    const { remainingBalance } = useWalletStore();
     
     // Hide TopAppBar on deep linking pages that have their own custom headers
     const hiddenPaths = ['/cart', '/history', '/canteen', '/settings', '/surprise'];

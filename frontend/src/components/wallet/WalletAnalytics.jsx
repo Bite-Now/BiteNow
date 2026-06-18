@@ -33,7 +33,7 @@ const renderCustomizedLabel = (props) => {
                 className="text-on-surface text-[10px] font-medium" 
                 dominantBaseline="central"
             >
-                {name} (₹{value})
+                {name} (₹{Math.round(value)})
             </text>
         </g>
     );
@@ -41,9 +41,17 @@ const renderCustomizedLabel = (props) => {
 
 export const WalletAnalytics = () => {
     const transactions = useWalletStore(state => state.transactions);
+    const canteenBreakdown = useWalletStore(state => state.canteenBreakdown);
+    const totalSpentThisMonth = useWalletStore(state => state.totalSpentThisMonth);
+    const monthlyLimit = useWalletStore(state => state.monthlyLimit);
     const [activeChart, setActiveChart] = useState('donut');
 
+    // Use backend-provided canteen breakdown (pre-computed for current month)
     const canteenData = useMemo(() => {
+        if (canteenBreakdown && canteenBreakdown.length > 0) {
+            return canteenBreakdown;
+        }
+        // Fallback: compute from transactions
         const counts = {};
         transactions.forEach(tx => {
             counts[tx.canteenId] = (counts[tx.canteenId] || 0) + tx.amount;
@@ -52,47 +60,40 @@ export const WalletAnalytics = () => {
             name: key,
             value: counts[key]
         })).sort((a, b) => b.value - a.value);
-    }, [transactions]);
+    }, [canteenBreakdown, transactions]);
 
     const radarData = useMemo(() => {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const data = months.map(m => ({ subject: m, totalSpend: 0 }));
 
         transactions.forEach(tx => {
-            const m = new Date(tx.timestamp).getMonth();
-            data[m].totalSpend += tx.amount;
+            if (tx.timestamp) {
+                const m = new Date(tx.timestamp).getMonth();
+                data[m].totalSpend += tx.amount;
+            }
         });
 
         return data;
     }, [transactions]);
 
     const generateInsight = () => {
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const lastMonth = (currentMonth - 1 + 12) % 12;
-        let thisMonthSpend = 0;
-        let lastMonthSpend = 0;
-
-        transactions.forEach(tx => {
-            const m = new Date(tx.timestamp).getMonth();
-            if (m === currentMonth) thisMonthSpend += tx.amount;
-            if (m === lastMonth) lastMonthSpend += tx.amount;
-        });
-
-        if (lastMonthSpend === 0) return "You're off to a great start this month!";
-        
-        const diff = thisMonthSpend - lastMonthSpend;
-        const percent = Math.round(Math.abs(diff) / lastMonthSpend * 100);
-
-        if (diff > 0) {
-            return `You've spent ${percent}% more this month compared to last month. Keep an eye on your budget!`;
-        } else if (diff < 0) {
-            return `Great job! You've spent ${percent}% less this month compared to last month.`;
+        if (!monthlyLimit || totalSpentThisMonth === 0) {
+            return "You're off to a great start this month!";
         }
-        return "Your spending is exactly on track with last month.";
+
+        const percentage = Math.round((totalSpentThisMonth / monthlyLimit) * 100);
+        
+        if (percentage >= 90) {
+            return `You've used ${percentage}% of your monthly budget! Consider slowing down.`;
+        } else if (percentage >= 60) {
+            return `You've used ${percentage}% of your monthly budget. Stay mindful of your spending!`;
+        } else if (percentage >= 30) {
+            return `You've used ${percentage}% of your budget. Great pace so far!`;
+        }
+        return `Only ${percentage}% of your budget used — plenty of room this month!`;
     };
 
-    if (transactions.length === 0) return null;
+    if (canteenData.length === 0 && transactions.length === 0) return null;
 
     return (
         <section className="flex flex-col gap-4 w-full mt-2">
@@ -127,47 +128,55 @@ export const WalletAnalytics = () => {
                 <div className="h-[260px] w-full relative">
                     {activeChart === 'donut' ? (
                         <div className="w-full h-full animate-in fade-in zoom-in-95 duration-300">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <defs>
-                                        <filter id="glowPie" x="-20%" y="-20%" width="140%" height="140%">
-                                            <feGaussianBlur stdDeviation="3" result="blur" />
-                                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                                        </filter>
-                                    </defs>
-                                    <Pie
-                                        data={canteenData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={45}
-                                        outerRadius={65}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                        stroke="none"
-                                        labelLine={false}
-                                        label={renderCustomizedLabel}
-                                    >
-                                        {canteenData.map((entry, index) => (
-                                            <Cell 
-                                                key={`cell-${index}`} 
-                                                fill={COLORS[index % COLORS.length]} 
-                                                filter="url(#glowPie)"
-                                            />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip 
-                                        contentStyle={{ backgroundColor: 'var(--color-surface-container-high, #1e293b)', border: '1px solid var(--color-outline-variant, #334155)', borderRadius: '12px' }}
-                                        itemStyle={{ color: 'var(--color-on-surface, #f8fafc)' }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                            {/* Custom Legend (Center Text) */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                                <span className="text-on-surface-variant text-[10px] uppercase tracking-widest block">Total</span>
-                                <span className="text-on-surface font-bold text-lg drop-shadow-sm">
-                                    ₹{canteenData.reduce((sum, item) => sum + item.value, 0)}
-                                </span>
-                            </div>
+                            {canteenData.length > 0 ? (
+                                <>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <defs>
+                                            <filter id="glowPie" x="-20%" y="-20%" width="140%" height="140%">
+                                                <feGaussianBlur stdDeviation="3" result="blur" />
+                                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                            </filter>
+                                        </defs>
+                                        <Pie
+                                            data={canteenData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={45}
+                                            outerRadius={65}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                            stroke="none"
+                                            labelLine={false}
+                                            label={renderCustomizedLabel}
+                                        >
+                                            {canteenData.map((entry, index) => (
+                                                <Cell 
+                                                    key={`cell-${index}`} 
+                                                    fill={COLORS[index % COLORS.length]} 
+                                                    filter="url(#glowPie)"
+                                                />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip 
+                                            contentStyle={{ backgroundColor: 'var(--color-surface-container-high, #1e293b)', border: '1px solid var(--color-outline-variant, #334155)', borderRadius: '12px' }}
+                                            itemStyle={{ color: 'var(--color-on-surface, #f8fafc)' }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                {/* Custom Legend (Center Text) */}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                                    <span className="text-on-surface-variant text-[10px] uppercase tracking-widest block">This Month</span>
+                                    <span className="text-on-surface font-bold text-lg drop-shadow-sm">
+                                        ₹{Math.round(canteenData.reduce((sum, item) => sum + item.value, 0))}
+                                    </span>
+                                </div>
+                                </>
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-on-surface-variant text-sm">
+                                    No spending data this month yet
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="w-full h-full animate-in fade-in zoom-in-95 duration-300">

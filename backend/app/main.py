@@ -7,7 +7,8 @@ from app.modules.owner.router import router as owner_router
 from app.modules.admin.router import router as admin_router
 from app.modules.webhooks.router import router as webhook_router
 from app.modules.menu.router import router as menu_router
-from app.modules.orders.router import router as orders_router, payments_router, staff_router as orders_staff_router, owner_router as orders_owner_router, notifications_router
+from app.modules.orders.router import router as orders_router, payments_router, staff_router as orders_staff_router, owner_router as orders_owner_router, notifications_router, dashboard_router
+from app.modules.student.router import router as student_router
 
 app = FastAPI(
     title="BiteNow API",
@@ -35,6 +36,8 @@ app.include_router(payments_router)
 app.include_router(orders_staff_router)
 app.include_router(orders_owner_router)
 app.include_router(notifications_router)
+app.include_router(dashboard_router)
+app.include_router(student_router)
 
 @app.get("/")
 def read_root():

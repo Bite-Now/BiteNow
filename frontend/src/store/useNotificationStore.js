@@ -27,5 +27,19 @@ export const useNotificationStore = create((set, get) => ({
 
     getUnreadCount: () => {
         return get().notifications.filter(n => !n.read).length;
-    }
+    },
+
+    setBackendNotifications: (backendNotifs) => set((state) => {
+        const mapped = backendNotifs.map(n => ({
+            id: n.id,
+            type: 'order',
+            title: n.title,
+            message: n.message,
+            read: n.is_read,
+            time: new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }));
+        
+        const localNotifs = state.notifications.filter(n => !n.id.includes('-'));
+        return { notifications: [...mapped, ...localNotifs] };
+    })
 }));

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { listCanteens } from '../services/menuApi';
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1544025162-d76694265947?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
 
@@ -12,8 +13,8 @@ const Home = () => {
     useEffect(() => {
         const fetchCanteens = async () => {
             try {
-                const response = await api.get('/canteens');
-                setCanteens(response.data);
+                const data = await listCanteens();
+                setCanteens(data);
                 setIsLoading(false);
             } catch (err) {
                 console.error("Failed to fetch canteens:", err);
@@ -54,10 +55,10 @@ const Home = () => {
                                 <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/90 via-surface/40 to-transparent"></div>
                                 
                                 <div className="absolute top-sm right-sm flex gap-xs">
-                                    <span className={`${canteen.is_open ? 'bg-secondary-container text-on-secondary-container' : 'bg-surface-variant text-on-surface-variant border border-outline-variant/30'} font-label-sm text-label-sm px-3 py-1 rounded-full backdrop-blur-sm shadow-sm`}>
-                                        {canteen.is_open ? 'Open' : 'Closed'}
+                                    <span className={`${canteen.is_active ? 'bg-secondary-container text-on-secondary-container' : 'bg-surface-variant text-on-surface-variant border border-outline-variant/30'} font-label-sm text-label-sm px-3 py-1 rounded-full backdrop-blur-sm shadow-sm`}>
+                                        {canteen.is_active ? 'Open' : 'Closed'}
                                     </span>
-                                    <span className={`${canteen.is_open ? 'bg-surface-container-high/80 text-on-surface text-primary' : 'bg-error-container/80 text-on-error-container border-error/30'} backdrop-blur-md border border-outline-variant/30 font-label-sm text-label-sm px-3 py-1 rounded-full flex items-center gap-1 shadow-sm`}>
+                                    <span className={`${canteen.is_active ? 'bg-surface-container-high/80 text-on-surface text-primary' : 'bg-error-container/80 text-on-error-container border-error/30'} backdrop-blur-md border border-outline-variant/30 font-label-sm text-label-sm px-3 py-1 rounded-full flex items-center gap-1 shadow-sm`}>
                                         <span className="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span> 15m
                                     </span>
                                 </div>

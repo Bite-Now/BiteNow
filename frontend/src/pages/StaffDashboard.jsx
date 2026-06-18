@@ -35,7 +35,7 @@ const StaffDashboard = () => {
     };
 
     const pendingOrders = orders.filter(o => o.status === 'PAID' || o.status === 'PREPARING');
-    const completedOrders = orders.filter(o => o.status === 'READY');
+    const completedOrders = orders.filter(o => ['READY', 'COMPLETED', 'COLLECTED'].includes(o.status));
 
     return (
         <div className="font-body-md flex flex-col p-8">
@@ -74,7 +74,9 @@ const StaffDashboard = () => {
                         <div className="mb-2">
                             Items: {order.items?.length || 0}
                         </div>
-                        <span className="text-[#22c55e] font-bold text-sm">Ready</span>
+                        <span className="text-[#22c55e] font-bold text-sm">
+                            {order.status === 'READY' ? 'Ready' : order.status === 'COLLECTED' ? 'Collected' : 'Completed'}
+                        </span>
                     </div>
                 ))}
                 {completedOrders.length === 0 && <div className="text-on-surface-variant">No ready orders.</div>}

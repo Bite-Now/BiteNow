@@ -48,6 +48,13 @@ async def clerk_webhook(
                 canteen_id=canteen_id
             )
             db.add(user)
+            await db.flush()  # Flush to get user.id
+            
+            if role == "STUDENT":
+                from app.modules.auth.models import Wallet
+                wallet = Wallet(user_id=user.id)
+                db.add(wallet)
+                
             await db.commit()
             
     elif event_type == "user.updated":
