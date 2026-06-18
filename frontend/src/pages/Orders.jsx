@@ -1,27 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_ORDERS } from '../data/mockData';
+import { getStudentOrders, getNotifications, markNotificationRead } from '../services/ordersApi';
 
 const Orders = () => {
   const navigate = useNavigate();
+  const [orders, setOrders] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchAll = async () => {
+    try {
+      const [orderData, notifData] = await Promise.all([
+        getStudentOrders(),
+        getNotifications()
+      ]);
+      const activeOrders = orderData.filter(o => !['COMPLETED', 'CANCELLED', 'COLLECTED'].includes(o.status));
+      setOrders(activeOrders);
+      setNotifications(notifData);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to fetch data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAll();
+    const intervalId = setInterval(fetchAll, 10000); // 10s polling
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const handleReadNotification = async (id) => {
+    try {
+      await markNotificationRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    } catch (err) {
+      console.error("Failed to mark notification read", err);
+    }
+  };
 
   const getStatusColor = (status) => {
     switch(status) {
-      case 'IN_QUEUE': return 'text-primary-container bg-primary-container/20';
+      case 'PAID': return 'text-primary-container bg-primary-container/20';
       case 'PREPARING': return 'text-primary bg-primary/20';
-      case 'READY': return 'text-secondary bg-secondary/20';
+      case 'READY': return 'text-[#22c55e] bg-[#22c55e]/20 animate-pulse border border-[#22c55e]/50';
       default: return 'text-on-surface-variant bg-surface-variant';
     }
   };
 
   const getStatusText = (status) => {
     switch(status) {
-      case 'IN_QUEUE': return '🟡 In Queue';
+      case 'PAID': return '🟡 Paid & Received';
       case 'PREPARING': return '🟠 Preparing';
       case 'READY': return '🟢 Ready for Pickup';
-      default: return '⚪ Unknown';
+      default: return `⚪ ${status}`;
     }
   };
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
     <div className="font-body-md flex flex-col pb-32 md:pb-8 relative">
@@ -31,7 +70,34 @@ const Orders = () => {
           <span className="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style={{ fontVariationSettings: '"FILL" 1' }}>restaurant_menu</span>
           <span className="font-headline-md text-headline-md-mobile font-bold text-primary dark:text-primary-fixed-dim">BiteNow</span>
         </div>
-        <div className="flex items-center gap-sm">
+        <div className="flex items-center gap-sm relative">
+          <button onClick={() => setShowNotifications(!showNotifications)} className="p-xs text-on-surface hover:text-primary transition-colors active:scale-95 relative">
+            <span className="material-symbols-outlined text-[24px]">notifications</span>
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-3 h-3 bg-error rounded-full border-2 border-surface"></span>
+            )}
+          </button>
+          
+          {showNotifications && (
+            <div className="absolute top-full right-0 mt-2 w-72 max-h-96 overflow-y-auto bg-surface-container rounded-xl shadow-lg border border-outline-variant/20 z-50">
+              <div className="p-3 border-b border-outline-variant/20 font-bold">Notifications</div>
+              {notifications.length === 0 ? (
+                <div className="p-4 text-center text-on-surface-variant text-sm">No notifications</div>
+              ) : (
+                notifications.map(n => (
+                  <div 
+                    key={n.id} 
+                    onClick={() => !n.is_read && handleReadNotification(n.id)}
+                    className={`p-3 border-b border-outline-variant/10 cursor-pointer transition-colors ${n.is_read ? 'opacity-50' : 'bg-primary/5 hover:bg-primary/10'}`}
+                  >
+                    <div className="font-bold text-sm">{n.title}</div>
+                    <div className="text-xs text-on-surface-variant mt-1">{n.message}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
           <button onClick={() => navigate('/history')} className="p-xs text-on-surface hover:text-primary transition-colors active:scale-95">
             <span className="material-symbols-outlined text-[24px]">history</span>
           </button>
@@ -43,7 +109,13 @@ const Orders = () => {
           <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Live Tracking</h1>
         </div>
 
-        {MOCK_ORDERS.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center mt-20">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center mt-20 text-error">{error}</div>
+        ) : orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center mt-20 text-center">
             <span className="material-symbols-outlined text-6xl text-surface-variant mb-4">receipt_long</span>
             <h2 className="font-headline-md text-on-surface mb-2">No Active Orders</h2>
@@ -51,15 +123,15 @@ const Orders = () => {
           </div>
         ) : (
           <div className="space-y-lg mb-lg">
-            {MOCK_ORDERS.map((order) => (
-              <div key={order.id} className="bg-surface-container-low rounded-xl p-md border border-surface-variant">
+            {orders.map((order) => (
+              <div key={order.id} className={`bg-surface-container-low rounded-xl p-md border ${order.status === 'READY' ? 'border-[#22c55e]' : 'border-surface-variant'}`}>
                 <div className="flex justify-between items-start mb-md pb-md border-b border-surface-variant/50">
                   <div>
                     <div className="flex items-center gap-xs mb-xs">
                       <span className="material-symbols-outlined text-primary text-[18px]">storefront</span>
-                      <h2 className="font-label-md text-label-md text-on-surface">{order.canteenName} Canteen</h2>
+                      <h2 className="font-label-md text-label-md text-on-surface">Order at Canteen {order.canteen_id?.substring(0,4)}</h2>
                     </div>
-                    <div className="font-body-sm text-body-sm text-on-surface-variant">Order {order.id}</div>
+                    <div className="font-headline-sm text-on-surface font-bold">Order #{order.order_number || order.id.substring(0,8)}</div>
                   </div>
                   <div className={`font-label-sm text-label-sm px-sm py-xs rounded-full ${getStatusColor(order.status)}`}>
                     {getStatusText(order.status)}
@@ -67,14 +139,15 @@ const Orders = () => {
                 </div>
 
                 <div className="space-y-sm">
-                  {order.items.map((item, index) => (
+                  {order.items && order.items.map((item, index) => (
                     <div key={index} className="flex items-center gap-md">
                       <div className="w-16 h-16 rounded-lg bg-surface-container-highest overflow-hidden flex-shrink-0 relative">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                        <div className="w-full h-full bg-surface-variant flex items-center justify-center">
+                          <span className="material-symbols-outlined text-on-surface-variant text-xl">fastfood</span>
+                        </div>
                       </div>
                       <div className="flex-grow flex justify-between items-center">
-                        <div className="font-label-md text-label-md text-on-surface">{item.name}</div>
+                        <div className="font-label-md text-label-md text-on-surface">Item {item.menu_item_id.substring(0,4)}</div>
                         <div className="font-body-sm text-body-sm text-on-surface-variant bg-surface-container px-sm py-xs rounded-lg border border-surface-variant">
                           Qty: {item.quantity}
                         </div>

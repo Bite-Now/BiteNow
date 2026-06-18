@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { initialPendingBatches, initialSuccessfulBatches } from '../../data/mockVendorData';
+import React, { useState, useEffect } from 'react';
+import { getOwnerOrders, markOrderReadyOwner } from '../../services/ordersApi';
+import { useAuth } from '@clerk/clerk-react';
 
 const BatchCard = ({ batch, onMarkReady, isPending }) => {
     return (
@@ -7,9 +8,9 @@ const BatchCard = ({ batch, onMarkReady, isPending }) => {
             <div className="flex justify-between items-start">
                 <div className="flex items-center gap-2">
                     <span className="bg-primary/20 text-primary font-bold text-xs px-2 py-1 rounded-md">
-                        {batch.id}
+                        #{batch.order_number || batch.id.substring(0,8)}
                     </span>
-                    <span className="text-on-surface-variant text-xs">{batch.timeReceived}</span>
+                    <span className="text-on-surface-variant text-xs">{new Date(batch.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
                 {isPending ? (
                     <span className="bg-[#f59e0b]/20 text-[#f59e0b] font-medium text-xs px-2 py-1 rounded-md flex items-center gap-1">
@@ -26,14 +27,10 @@ const BatchCard = ({ batch, onMarkReady, isPending }) => {
 
             <div className="flex justify-between items-center mt-1">
                 <div>
-                    <h3 className="text-on-surface font-bold text-xl">{batch.itemName}</h3>
+                    <h3 className="text-on-surface font-bold text-xl">₹{batch.total_amount}</h3>
                     <p className="text-on-surface-variant text-sm mt-1">
-                        Included Orders: {batch.orders.join(', ')}
+                        Items: {batch.items?.length || 0}
                     </p>
-                </div>
-                <div className="flex flex-col items-end">
-                    <span className="text-xs text-on-surface-variant uppercase tracking-wider">Qty</span>
-                    <span className="text-2xl font-bold text-primary">x{batch.quantity}</span>
                 </div>
             </div>
 
@@ -50,20 +47,55 @@ const BatchCard = ({ batch, onMarkReady, isPending }) => {
 };
 
 const VendorOrders = () => {
+    const { getToken } = useAuth();
     const [activeTab, setActiveTab] = useState('pending');
-    const [pendingBatches, setPendingBatches] = useState(initialPendingBatches);
-    const [successfulBatches, setSuccessfulBatches] = useState(initialSuccessfulBatches);
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const handleMarkReady = (batchId) => {
-        const batchToMove = pendingBatches.find(b => b.id === batchId);
-        if (batchToMove) {
-            setPendingBatches(prev => prev.filter(b => b.id !== batchId));
-            setSuccessfulBatches(prev => [
-                { ...batchToMove, completedAt: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }, 
-                ...prev
-            ]);
+    const fetchOrders = async () => {
+        try {
+            let data;
+            try {
+                data = await getOwnerOrders();
+            } catch (err) {
+                if (err.response?.status === 403) {
+                    const { getStaffOrders } = await import('../../services/ordersApi');
+                    data = await getStaffOrders();
+                } else throw err;
+            }
+            setOrders(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchOrders();
+        const interval = setInterval(fetchOrders, 10000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleMarkReady = async (batchId) => {
+        try {
+            try {
+                await markOrderReadyOwner(batchId);
+            } catch (err) {
+                if (err.response?.status === 403) {
+                    const { markOrderReadyStaff } = await import('../../services/ordersApi');
+                    await markOrderReadyStaff(batchId);
+                } else throw err;
+            }
+            fetchOrders();
+        } catch (err) {
+            console.error("Failed to mark order ready", err);
+            alert("Failed to mark order ready.");
+        }
+    };
+
+    const pendingBatches = orders.filter(o => o.status === 'PAID' || o.status === 'PREPARING');
+    const successfulBatches = orders.filter(o => o.status === 'READY');
 
     const currentBatches = activeTab === 'pending' ? pendingBatches : successfulBatches;
 

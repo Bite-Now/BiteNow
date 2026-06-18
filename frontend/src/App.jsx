@@ -10,6 +10,7 @@ import OrderHistory from './pages/OrderHistory';
 import Surprise from './pages/Surprise';
 import Budget from './pages/Budget';
 import Unauthorized from './pages/Unauthorized';
+import MockPayment from './pages/student/MockPayment';
 import MainLayout from './components/layout/MainLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { RoleRedirect } from './components/auth/RoleRedirect';
@@ -22,8 +23,9 @@ import VendorProducts from './pages/vendor/VendorProducts';
 import VendorEarnings from './pages/vendor/VendorEarnings';
 import VendorStaff from './pages/vendor/VendorStaff';
 
+import StaffDashboard from './pages/StaffDashboard';
+
 // Dummy components for missing dashboards to satisfy router
-const StaffDashboard = () => <div className="p-8 text-white">Staff Dashboard</div>;
 const AdminDashboard = () => <div className="p-8 text-white">Admin Dashboard</div>;
 
 function App() {
@@ -48,6 +50,8 @@ function App() {
           <Route path="/surprise" element={<Surprise />} />
           <Route path="/budget" element={<Budget />} />
         </Route>
+
+        <Route path="/checkout" element={<ProtectedRoute allowedRoles={['STUDENT']}><MockPayment /></ProtectedRoute>} />
 
         {/* Protected Routes - STAFF */}
         <Route path="/staff" element={<ProtectedRoute allowedRoles={['STAFF']}><StaffDashboard /></ProtectedRoute>} />
