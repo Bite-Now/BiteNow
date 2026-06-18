@@ -46,3 +46,21 @@ class NotificationResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class TopItem(BaseModel):
+    name: str
+    orders: int
+
+class TrendDataPoint(BaseModel):
+    name: str
+    earnings: float
+    orders: int
+
+class DashboardStatsResponse(BaseModel):
+    earnings: str
+    orders_completed: int
+    orders_pending: int
+    batching_efficiency: str
+    top_items: List[TopItem]
+    monthly_data: List[TrendDataPoint]
+    yearly_data: List[TrendDataPoint]

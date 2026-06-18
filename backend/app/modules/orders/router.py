@@ -6,9 +6,12 @@ from typing import List
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_strict_student, require_staff, require_owner
 from app.modules.auth.models import User, Canteen, StaffAssignment
-from app.modules.orders.schemas import OrderCreateRequest, OrderResponse, MockFailureRequest
-from app.modules.orders.repository import OrderRepository
+from app.modules.orders.schemas import (
+    OrderCreateRequest, OrderResponse, MockFailureRequest, NotificationResponse, DashboardStatsResponse
+)
 from app.modules.orders.service import OrderService
+from app.modules.orders.analytics_service import AnalyticsService, get_analytics_service
+from app.modules.orders.repository import OrderRepository
 from app.modules.menu.repository import MenuRepository
 from sqlalchemy import select
 
@@ -145,6 +148,25 @@ async def ready_owner_order(
         raise HTTPException(status_code=404, detail="Order not found")
         
     return await service.mark_ready(order_id)
+
+# -----------------
+# Dashboard Analytics
+# -----------------
+dashboard_router = APIRouter(prefix="/owner/dashboard", tags=["Owner Dashboard"])
+
+@dashboard_router.get("/stats", response_model=DashboardStatsResponse)
+async def get_dashboard_stats(
+    user: User = Depends(require_owner),
+    db: AsyncSession = Depends(get_db),
+    analytics_service: AnalyticsService = Depends(get_analytics_service)
+):
+    stmt = select(Canteen).where(Canteen.owner_id == user.id)
+    res = await db.execute(stmt)
+    canteen = res.scalars().first()
+    if not canteen:
+        raise HTTPException(status_code=403, detail="No canteen owned")
+        
+    return await analytics_service.get_vendor_dashboard_stats(canteen.id)
 
 from app.modules.orders.schemas import OrderCreateRequest, OrderResponse, MockFailureRequest, NotificationResponse
 

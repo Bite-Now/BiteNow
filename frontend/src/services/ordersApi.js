@@ -46,6 +46,11 @@ export const markOrderReadyOwner = async (orderId) => {
     return response.data;
 };
 
+export const getDashboardStats = async () => {
+    const response = await api.get('/owner/dashboard/stats');
+    return response.data;
+};
+
 export const getNotifications = async () => {
     const response = await api.get('/notifications');
     return response.data;
