@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Package, Bike, Store, Percent, Bell, Check, CheckCircle2 } from 'lucide-react';
 import { useNotificationStore } from '../../store/useNotificationStore';
+import { markNotificationRead } from '../../services/ordersApi';
 
 export function BiteNowNotificationPopover() {
   const [activeTab, setActiveTab] = useState('All');
@@ -56,7 +57,14 @@ export function BiteNowNotificationPopover() {
           <div className="flex items-center justify-between p-4 border-b border-outline-variant/20 bg-surface">
             <Dialog.Title className="text-lg font-headline-sm font-bold text-on-surface">Notifications</Dialog.Title>
             <button 
-              onClick={markAllAsRead}
+              onClick={() => {
+                markAllAsRead();
+                filteredNotifications.forEach(n => {
+                  if (n.id.includes('-') && !n.read) {
+                    markNotificationRead(n.id).catch(()=>{});
+                  }
+                });
+              }}
               className="text-sm font-label-md text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1"
             >
               <Check className="w-4 h-4" />
@@ -96,7 +104,14 @@ export function BiteNowNotificationPopover() {
                 {filteredNotifications.map(notification => (
                   <button
                     key={notification.id}
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={async () => {
+                      markAsRead(notification.id);
+                      if (notification.id.includes('-')) {
+                          try {
+                              await markNotificationRead(notification.id);
+                          } catch(err) {}
+                      }
+                    }}
                     className={`flex items-start gap-3 p-3 text-left rounded-lg transition-colors hover:bg-surface-container-high ${!notification.read ? 'bg-surface-container' : ''}`}
                   >
                     <div className="flex-shrink-0 mt-1 w-10 h-10 rounded-full bg-surface border border-outline-variant/20 flex items-center justify-center">

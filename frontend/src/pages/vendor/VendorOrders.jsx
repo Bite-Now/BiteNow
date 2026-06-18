@@ -22,7 +22,7 @@ const BatchCard = ({ batch, onMarkReady, isPending }) => {
                 ) : (
                     <span className="bg-[#22c55e]/20 text-[#22c55e] font-medium text-xs px-2 py-1 rounded-md flex items-center gap-1">
                         <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                        Ready
+                        {batch.status === 'READY' ? 'Ready' : batch.status === 'COLLECTED' ? 'Collected' : 'Completed'}
                     </span>
                 )}
             </div>
@@ -123,7 +123,7 @@ const VendorOrders = () => {
     }
 
     const pendingBatches = orders.filter(o => o.status === 'PAID' || o.status === 'PREPARING');
-    const successfulBatches = orders.filter(o => o.status === 'READY');
+    const successfulBatches = orders.filter(o => ['READY', 'COMPLETED', 'COLLECTED'].includes(o.status));
 
     const currentBatches = activeTab === 'pending' ? pendingBatches : successfulBatches;
 

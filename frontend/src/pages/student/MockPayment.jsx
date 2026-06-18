@@ -7,7 +7,7 @@ import { mockPaymentSuccess, mockPaymentFailed } from '../../services/ordersApi'
 const MockPayment = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const orderId = location.state?.orderId;
+    const payload = location.state?.payload;
     const { items, getTotalPrice, clearCart } = useCartStore();
     const { getToken } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -20,9 +20,7 @@ const MockPayment = () => {
         setError(null);
 
         try {
-            if (!orderId) throw new Error("Order ID missing. Please go back to cart.");
-
-            const payload = { order_id: orderId };
+            if (!payload) throw new Error("Order payload missing. Please go back to cart.");
 
             let data;
             if (isSuccess) {

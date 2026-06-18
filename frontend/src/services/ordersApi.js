@@ -6,13 +6,13 @@ export const createOrder = async (payload) => {
     return response.data;
 };
 
-export const mockPaymentSuccess = async ({ order_id }) => {
-    const response = await api.post('/payments/mock-success', { order_id });
+export const mockPaymentSuccess = async (payload) => {
+    const response = await api.post('/payments/mock-success', payload);
     return response.data;
 };
 
-export const mockPaymentFailed = async ({ order_id }) => {
-    const response = await api.post('/payments/mock-failed', { order_id });
+export const mockPaymentFailed = async (payload) => {
+    const response = await api.post('/payments/mock-failed', payload);
     return response.data;
 };
 

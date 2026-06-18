@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStudentOrders, getNotifications, markNotificationRead } from '../services/ordersApi';
+import { useNotificationStore } from '../store/useNotificationStore';
 
 const Orders = () => {
   const navigate = useNavigate();
@@ -9,6 +10,7 @@ const Orders = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const setBackendNotifications = useNotificationStore(state => state.setBackendNotifications);
 
   const fetchAll = async () => {
     try {
@@ -19,6 +21,7 @@ const Orders = () => {
       const activeOrders = orderData.filter(o => !['COMPLETED', 'CANCELLED', 'COLLECTED'].includes(o.status));
       setOrders(activeOrders);
       setNotifications(notifData);
+      setBackendNotifications(notifData);
       setError(null);
     } catch (err) {
       console.error("Failed to fetch data:", err);

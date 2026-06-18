@@ -18,21 +18,17 @@ const Cart = () => {
             const canteenId = items[0].canteenId;
             const payload = {
                 canteen_id: canteenId,
-                items: items.map(i => ({ menu_item_id: i.id, quantity: i.quantity }))
+                items: items.map(i => ({ menu_item_id: i.id, quantity: i.quantity })),
+                idempotency_key: crypto.randomUUID()
             };
             
-            const data = await createOrder(payload);
-            const orderId = data.order_id;
-            
-            // Note: we don't clearCart here yet, we do it after successful payment
-            
-            navigate('/checkout', { state: { orderId } });
+            navigate('/checkout', { state: { payload } });
         } catch (err) {
-            console.error("Failed to create order:", err);
+            console.error("Failed to proceed to checkout:", err);
             addNotification({
                 type: 'error',
-                title: 'Order Failed',
-                message: err.response?.data?.detail || 'Could not place order'
+                title: 'Checkout Failed',
+                message: 'Could not proceed to payment'
             });
         } finally {
             setIsSubmitting(false);
