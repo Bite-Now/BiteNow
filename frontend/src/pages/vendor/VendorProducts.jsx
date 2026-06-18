@@ -8,7 +8,7 @@ import GoldenGlowButton from '../../components/ui/GoldenGlowButton';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Add Product Modal ---
-const AddProductModal = ({ isOpen, onClose, onAdd, categoryId, categoryName }) => {
+const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting }) => {
     if (!isOpen) return null;
     
     const [name, setName] = useState('');
@@ -16,21 +16,24 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryId, categoryName }) =
     const [price, setPrice] = useState('');
     const [image, setImage] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!name || !price) return;
-
-        onAdd({
-            id: 'p' + Date.now(),
-            name,
-            description: desc || 'No description provided.',
-            price: price.startsWith('₹') ? price : `₹${price}`,
-            image: image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80', // Default food image
-            inStock: true
-        }, categoryId);
         
-        onClose();
-        setName(''); setDesc(''); setPrice(''); setImage('');
+        try {
+            await onAdd({
+                name,
+                description: desc || undefined,
+                price: parseFloat(price.replace('₹', '')),
+                image_url: image || undefined,
+                category: categoryName !== 'special' ? categoryName : undefined
+            });
+            
+            onClose();
+            setName(''); setDesc(''); setPrice(''); setImage('');
+        } catch (err) {
+            // Error handled in onAdd
+        }
     };
 
     return (
@@ -87,7 +90,7 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryId, categoryName }) =
 };
 
 // --- Product Card ---
-const ProductCard = ({ item, isSpecial, onToggleStock, onChangeCap }) => {
+const ProductCard = ({ item, isSpecial }) => {
     return (
         <div className="bg-surface-container rounded-xl p-2.5 flex gap-3 shadow-sm border border-outline-variant/20 mb-2 hover:border-outline-variant/40 transition-all group">
             {/* Left Side: Content */}
@@ -133,7 +136,9 @@ const ProductCard = ({ item, isSpecial, onToggleStock, onChangeCap }) => {
 };
 
 const VendorProducts = () => {
-    const [products, setProducts] = useState(mockVendorProducts);
+    const { canteenId, isLoaded } = useCurrentCanteen();
+    const [menuData, setMenuData] = useState({ specials: [], categories: [] });
+    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategoryId, setActiveCategoryId] = useState('special');
     const [modalConfig, setModalConfig] = useState({ isOpen: false, categoryId: null, categoryName: '' });
@@ -161,44 +166,57 @@ const VendorProducts = () => {
         }
     }, [activeCategoryId]);
 
-    const toggleStock = (itemId) => {
-        setProducts(prev => {
-            const specialMenu = prev.specialMenu.map(i => i.id === itemId ? { ...i, inStock: !i.inStock } : i);
-            const categories = prev.categories.map(c => ({
-                ...c,
-                items: c.items.map(i => i.id === itemId ? { ...i, inStock: !i.inStock } : i)
+    const fetchMenu = async () => {
+        if (!canteenId) return;
+        try {
+            const response = await api.get(`/canteens/${canteenId}/menu`);
+            const data = response.data;
+            const categories = Object.keys(data.menu).map(categoryName => ({
+                name: categoryName,
+                items: data.menu[categoryName]
             }));
-            return { ...prev, specialMenu, categories };
-        });
+            
+            setMenuData({
+                specials: data.specials || [],
+                categories: categories
+            });
+        } catch (err) {
+            console.error("Failed to fetch owner menu:", err);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const changeCap = (itemId, newCap) => {
-        setProducts(prev => {
-            const specialMenu = prev.specialMenu.map(i => i.id === itemId ? { ...i, cap: newCap } : i);
-            return { ...prev, specialMenu };
-        });
-    };
-
-    const handleAddProduct = (newItem, categoryId) => {
-        setProducts(prev => {
-            if (categoryId === 'special') {
-                return {
-                    ...prev,
-                    specialMenu: [...prev.specialMenu, { ...newItem, cap: 10 }]
-                };
+    useEffect(() => {
+        if (isLoaded) {
+            if (canteenId) {
+                fetchMenu();
             } else {
-                return {
-                    ...prev,
-                    categories: prev.categories.map(c => 
-                        c.id === categoryId ? { ...c, items: [...c.items, newItem] } : c
-                    )
-                };
+                setIsLoading(false);
             }
-        });
+        }
+    }, [isLoaded, canteenId]);
+
+    const handleAddProduct = async (newItemPayload) => {
+        setIsSubmitting(true);
+        try {
+            if (modalConfig.categoryName === 'special') {
+                await api.post(`/owner/specials?canteen_id=${canteenId}`, newItemPayload);
+            } else {
+                await api.post(`/owner/menu?canteen_id=${canteenId}`, newItemPayload);
+            }
+            await fetchMenu();
+        } catch (err) {
+            console.error("Failed to add product:", err);
+            alert("Failed to add product.");
+            throw err;
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    const openAddModal = (categoryId, categoryName) => {
-        setModalConfig({ isOpen: true, categoryId, categoryName });
+    const openAddModal = (categoryName) => {
+        setModalConfig({ isOpen: true, categoryName });
     };
 
     const handleAddCategory = (e) => {
@@ -226,7 +244,7 @@ const VendorProducts = () => {
     };
 
     return (
-        <div className="flex flex-col gap-4 w-full pb-32 pt-4 px-3 relative bg-background">
+        <div className="flex flex-col gap-4 w-full pb-32 pt-4 px-3 relative bg-background min-h-screen">
             
             {/* Header */}
             <div className="flex justify-between items-center px-1 mt-2">
@@ -445,10 +463,10 @@ const VendorProducts = () => {
             {/* Modal */}
             <AddProductModal 
                 isOpen={modalConfig.isOpen}
-                categoryId={modalConfig.categoryId}
                 categoryName={modalConfig.categoryName}
-                onClose={() => setModalConfig({ isOpen: false, categoryId: null, categoryName: '' })}
+                onClose={() => setModalConfig({ isOpen: false, categoryName: '' })}
                 onAdd={handleAddProduct}
+                isSubmitting={isSubmitting}
             />
 
         </div>

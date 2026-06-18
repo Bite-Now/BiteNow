@@ -39,7 +39,7 @@ const ProfileDropdown = () => {
         localStorage.setItem('theme', newMode ? 'dark' : 'light');
     };
 
-    const handleAction = (action) => {
+    const handleAction = async (action) => {
         setIsOpen(false);
         switch (action) {
             case 'logout':
