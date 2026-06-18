@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     CLERK_SECRET_KEY: str
     CLERK_WEBHOOK_SECRET: Optional[str] = None
     
+    # Groq
+    GROQ_API_KEY: str
+    
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()

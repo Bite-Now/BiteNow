@@ -4,11 +4,14 @@ from sqlalchemy import select, func, extract
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone
+from fastapi import Query
 
 from app.core.database import get_db
 from app.core.dependencies import require_strict_student
 from app.modules.auth.models import User, Wallet, Canteen
 from app.modules.orders.models import Order
+from app.modules.student.surprise_service import SurpriseService
+from app.modules.student.ai_chef_service import AIChefService
 
 router = APIRouter(prefix="/student", tags=["Student"])
 
@@ -151,3 +154,24 @@ async def update_wallet_limit(
         transactions=transactions,
         canteen_breakdown=canteen_breakdown,
     )
+
+@router.get("/surprise")
+async def get_surprise(
+    budget: float = Query(..., gt=0, description="The maximum budget for the surprise meal"),
+    user: User = Depends(require_strict_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get 5 curated surprise meal options based on budget."""
+    # Attempt AI Generation first
+    try:
+        ai_service = AIChefService(db)
+        cards = await ai_service.generate_ai_combos(budget)
+        if len(cards) >= 1:
+            return {"combos": cards}
+    except Exception as e:
+        print(f"AI Chef Generation failed, falling back to programmatic engine: {e}")
+        
+    # Fallback to programmatic engine
+    service = SurpriseService(db)
+    cards = await service.generate_surprises(user.id, budget)
+    return {"combos": cards}

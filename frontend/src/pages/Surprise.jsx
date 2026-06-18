@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
-import { generateSurpriseDeck } from '../utils/surpriseGenerator';
+import api from '../services/api';
 import { useCartStore } from '../store/useCartStore';
 import { useWalletStore } from '../store/useWalletStore';
 import { useNavigate } from 'react-router-dom';
 
 const GENERATION_TEXTS = [
-    "Analyzing order history...",
-    "Checking favorite meals...",
-    "Finding budget-friendly picks...",
-    "Generating surprises..."
+    "Waking up the AI Chef...",
+    "Analyzing your taste profile...",
+    "AI Chef is thinking...",
+    "Curating the perfect combo..."
 ];
 
 const POPULAR_PICKS = [
@@ -94,6 +94,8 @@ const Surprise = () => {
     const [flowState, setFlowState] = useState('setup'); // setup, generating, active, empty
     const [budget, setBudget] = useState(120);
     const [deck, setDeck] = useState([]);
+    const [fetchedDeck, setFetchedDeck] = useState(null);
+    const [isSequenceDone, setIsSequenceDone] = useState(false);
     const [showLocalCart, setShowLocalCart] = useState(false);
     const [cartPulse, setCartPulse] = useState(false);
     
@@ -101,14 +103,28 @@ const Surprise = () => {
     const [lastSwipeDirection, setLastSwipeDirection] = useState(null);
 
     // Handlers
-    const handleSurpriseMe = () => {
+    const handleSurpriseMe = async () => {
         setFlowState('generating');
+        setIsSequenceDone(false);
+        setFetchedDeck(null);
+        try {
+            const response = await api.get(`/student/surprise?budget=${budget}`);
+            setFetchedDeck(response.data.combos || []);
+        } catch (e) {
+            setFetchedDeck([]);
+        }
     };
 
     const handleGenerationComplete = () => {
-        setDeck(generateSurpriseDeck(budget));
-        setFlowState('active');
+        setIsSequenceDone(true);
     };
+
+    useEffect(() => {
+        if (flowState === 'generating' && isSequenceDone && fetchedDeck !== null) {
+            setDeck(fetchedDeck);
+            setFlowState(fetchedDeck.length > 0 ? 'active' : 'empty');
+        }
+    }, [flowState, isSequenceDone, fetchedDeck]);
 
     const handleSuggestAgain = () => {
         setFlowState('setup');
@@ -125,7 +141,7 @@ const Surprise = () => {
         if (direction === 'right') {
             // Add items to cart
             items.forEach(item => {
-                addToCart(item, item.canteenId || 'c1');
+                addToCart(item, item.canteen_id || item.canteenId || 'c1');
             });
             
             // Trigger cart pop-in and pulse
