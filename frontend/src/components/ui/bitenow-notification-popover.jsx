@@ -1,18 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Package, Bike, Store, Percent, Bell, Check, CheckCircle2 } from 'lucide-react';
+import { Package, Bike, Store, Percent, Bell, Check, CheckCircle2, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useNotificationStore } from '../../store/useNotificationStore';
-import { markNotificationRead } from '../../services/ordersApi';
+import { AuthContext } from '../../context/AuthContext';
+import { markNotificationRead, deleteBulkNotifications } from '../../services/ordersApi';
 
 export function BiteNowNotificationPopover() {
+  const navigate = useNavigate();
+  const { role } = useContext(AuthContext);
+  const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('All');
   const [portalContainer, setPortalContainer] = useState(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const timerRef = useRef(null);
   
   useEffect(() => {
     setPortalContainer(document.getElementById('app-root-frame'));
   }, []);
   
-  const { notifications, getUnreadCount, markAsRead, markAllAsRead } = useNotificationStore();
+  const { notifications, getUnreadCount, markAsRead, markAllAsRead, removeNotifications } = useNotificationStore();
   const unreadCount = getUnreadCount();
 
   const filteredNotifications = notifications.filter(n => {
@@ -32,7 +40,7 @@ export function BiteNowNotificationPopover() {
   };
 
   return (
-    <Dialog.Root>
+    <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <Dialog.Trigger asChild>
         <button 
           className="relative p-2 rounded-full hover:bg-surface-variant transition-colors focus:outline-none"
@@ -54,23 +62,70 @@ export function BiteNowNotificationPopover() {
             className="z-50 w-full bg-surface-container-low border-t border-outline-variant/30 shadow-lg flex flex-col overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-1/2 data-[state=open]:slide-in-from-bottom-1/2 fixed bottom-0 inset-x-0 rounded-t-2xl max-h-[80vh] text-on-surface font-body-md"
           >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-outline-variant/20 bg-surface">
-            <Dialog.Title className="text-lg font-headline-sm font-bold text-on-surface">Notifications</Dialog.Title>
-            <button 
-              onClick={() => {
-                markAllAsRead();
-                filteredNotifications.forEach(n => {
-                  if (n.id.includes('-') && !n.read) {
-                    markNotificationRead(n.id).catch(()=>{});
-                  }
-                });
-              }}
-              className="text-sm font-label-md text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1"
-            >
-              <Check className="w-4 h-4" />
-              Mark all as read
-            </button>
-          </div>
+          {selectionMode ? (
+            <div className="flex items-center justify-between p-4 border-b border-outline-variant/20 bg-surface">
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => { setSelectionMode(false); setSelectedIds(new Set()); }}
+                  className="p-1 rounded-full hover:bg-surface-variant transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px] text-on-surface-variant">close</span>
+                </button>
+                <span className="text-lg font-headline-sm font-bold text-on-surface">
+                  {selectedIds.size} Selected
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => {
+                    if (selectedIds.size === filteredNotifications.length) {
+                      setSelectedIds(new Set());
+                    } else {
+                      setSelectedIds(new Set(filteredNotifications.map(n => n.id)));
+                    }
+                  }}
+                  className="text-sm font-label-md text-primary transition-colors"
+                >
+                  {selectedIds.size === filteredNotifications.length ? 'Deselect All' : 'Select All'}
+                </button>
+                {selectedIds.size > 0 && (
+                  <button 
+                    onClick={async () => {
+                      const ids = Array.from(selectedIds);
+                      const backendIds = ids.filter(id => id.includes('-'));
+                      if (backendIds.length > 0) {
+                        await deleteBulkNotifications(backendIds).catch(()=>{});
+                      }
+                      removeNotifications(ids);
+                      setSelectionMode(false);
+                      setSelectedIds(new Set());
+                    }}
+                    className="p-1.5 rounded-full hover:bg-error/10 text-error transition-colors"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between p-4 border-b border-outline-variant/20 bg-surface">
+              <Dialog.Title className="text-lg font-headline-sm font-bold text-on-surface">Notifications</Dialog.Title>
+              <button 
+                onClick={() => {
+                  markAllAsRead();
+                  filteredNotifications.forEach(n => {
+                    if (n.id.includes('-') && !n.read) {
+                      markNotificationRead(n.id).catch(()=>{});
+                    }
+                  });
+                }}
+                className="text-sm font-label-md text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1"
+              >
+                <Check className="w-4 h-4" />
+                Mark all as read
+              </button>
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="flex px-4 py-3 gap-2 border-b border-outline-variant/20 overflow-x-auto no-scrollbar bg-surface-container">
@@ -104,16 +159,50 @@ export function BiteNowNotificationPopover() {
                 {filteredNotifications.map(notification => (
                   <button
                     key={notification.id}
+                    onPointerDown={(e) => {
+                      if (e.button !== 0 || selectionMode) return;
+                      timerRef.current = setTimeout(() => {
+                        setSelectionMode(true);
+                        setSelectedIds(new Set([notification.id]));
+                      }, 500);
+                    }}
+                    onPointerUp={() => {
+                      if (timerRef.current) clearTimeout(timerRef.current);
+                    }}
+                    onPointerLeave={() => {
+                      if (timerRef.current) clearTimeout(timerRef.current);
+                    }}
+                    onContextMenu={(e) => { if (!selectionMode) e.preventDefault(); }}
                     onClick={async () => {
-                      markAsRead(notification.id);
-                      if (notification.id.includes('-')) {
-                          try {
-                              await markNotificationRead(notification.id);
-                          } catch(err) {}
+                      if (selectionMode) {
+                        setSelectedIds(prev => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(notification.id)) newSet.delete(notification.id);
+                          else newSet.add(notification.id);
+                          return newSet;
+                        });
+                      } else {
+                        markAsRead(notification.id);
+                        if (notification.id.includes('-')) {
+                            try {
+                                await markNotificationRead(notification.id);
+                            } catch(err) {}
+                        }
+                        if (role === 'OWNER') navigate('/vendor/orders');
+                        else if (role === 'STAFF') navigate('/staff/orders');
+                        else navigate('/orders');
+                        setIsOpen(false);
                       }
                     }}
-                    className={`flex items-start gap-3 p-3 text-left rounded-lg transition-colors hover:bg-surface-container-high ${!notification.read ? 'bg-surface-container' : ''}`}
+                    className={`flex items-start gap-3 p-3 text-left rounded-lg transition-colors select-none ${selectionMode ? 'hover:bg-surface-variant/50' : 'hover:bg-surface-container-high'} ${!notification.read && !selectionMode ? 'bg-surface-container' : ''} ${selectedIds.has(notification.id) ? 'bg-primary/5' : ''}`}
                   >
+                    {selectionMode && (
+                      <div className="flex items-center justify-center mt-3 mr-1">
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${selectedIds.has(notification.id) ? 'bg-primary border-primary' : 'border-outline-variant/50'}`}>
+                          {selectedIds.has(notification.id) && <Check className="w-3 h-3 text-on-primary" strokeWidth={3} />}
+                        </div>
+                      </div>
+                    )}
                     <div className="flex-shrink-0 mt-1 w-10 h-10 rounded-full bg-surface border border-outline-variant/20 flex items-center justify-center">
                       {getIcon(notification.type)}
                     </div>

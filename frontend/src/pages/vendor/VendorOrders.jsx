@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import GoldenGlowButton from '../../components/ui/GoldenGlowButton';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useAuth } from '../../hooks/useAuth';
-import { getOwnerOrders, getStaffOrders, markOrderReadyOwner, markOrderReadyStaff } from '../../services/ordersApi';
+import { getOwnerOrders, getStaffOrders, markOrderReadyOwner, markOrderReadyStaff, getNotifications } from '../../services/ordersApi';
 
 const BatchCard = ({ batch, onMarkReady, isPending }) => {
     return (
@@ -28,11 +28,19 @@ const BatchCard = ({ batch, onMarkReady, isPending }) => {
             </div>
 
             <div className="flex justify-between items-center mt-1">
-                <div>
-                    <h3 className="text-on-surface font-bold text-xl">₹{batch.total_amount}</h3>
-                    <p className="text-on-surface-variant text-sm mt-1">
-                        Items: {batch.items?.length || 0}
-                    </p>
+                <div className="w-full">
+                    <div className="flex flex-col gap-1 w-full border-b border-outline-variant/10 pt-2">
+                        {batch.items?.map((item, idx) => (
+                            <div key={idx} className="flex justify-between mb-2 text-sm">
+                                <span className="text-on-surface font-medium truncate pr-2">{item.menu_item_name || 'Unknown Item'}</span>
+                                <span className="text-on-surface-variant shrink-0">x{item.quantity}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex justify-between items-center mt-2">    
+                        <span className="text-on-surface font-bold text-md mb-2">Total</span>
+                        <h3 className="text-on-surface font-bold text-md mb-2">₹{batch.total_amount}</h3>
+                    </div>
                 </div>
             </div>
 
@@ -57,7 +65,7 @@ const VendorOrders = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const { addNotification } = useNotificationStore();
+    const { addNotification, setBackendNotifications } = useNotificationStore();
 
     const fetchOrders = async () => {
         try {
@@ -69,6 +77,13 @@ const VendorOrders = () => {
             }
             setOrders(data);
             setError(null);
+            
+            try {
+                const notifs = await getNotifications();
+                setBackendNotifications(notifs);
+            } catch (notifErr) {
+                console.error("Failed to fetch notifications:", notifErr);
+            }
         } catch (err) {
             console.error("Failed to fetch vendor orders:", err);
             setError("Failed to load orders");
@@ -95,11 +110,6 @@ const VendorOrders = () => {
             // Optimistic update
             setOrders(prev => prev.map(o => o.id === batchId ? { ...o, status: 'READY' } : o));
             
-            addNotification({
-                type: 'order',
-                title: 'Order Ready!',
-                message: `Order ${batchId.substring(0,8)} is ready for pickup.`
-            });
         } catch (err) {
             console.error("Failed to mark order ready", err);
             addNotification({

@@ -46,7 +46,7 @@ const Orders = () => {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'PAID': return 'text-primary-container bg-primary-container/20';
       case 'PREPARING': return 'text-primary bg-primary/20';
       case 'READY': return 'text-[#22c55e] bg-[#22c55e]/20 animate-pulse border border-[#22c55e]/50';
@@ -55,7 +55,7 @@ const Orders = () => {
   };
 
   const getStatusText = (status) => {
-    switch(status) {
+    switch (status) {
       case 'PAID': return '🟡 Paid & Received';
       case 'PREPARING': return '🟠 Preparing';
       case 'READY': return '🟢 Ready for Pickup';
@@ -95,14 +95,15 @@ const Orders = () => {
                   <div>
                     <div className="flex items-center gap-xs mb-xs">
                       <span className="material-symbols-outlined text-primary text-[18px]">storefront</span>
-                      <h2 className="font-label-md text-label-md text-on-surface">Order at Canteen {order.canteen_id?.substring(0,4)}</h2>
+                      <h2 className="font-label-md text-label-md text-on-surface">Order at <br></br> {order.canteen_name || `Canteen ${order.canteen_id?.substring(0, 4)}`}</h2>
                     </div>
-                    <div className="font-headline-sm text-on-surface font-bold">Order #{order.order_number || order.id.substring(0,8)}</div>
+                    <div className="font-headline-sm text-on-surface font-bold">Order #{order.order_number || order.id.substring(0, 8)}</div>
                   </div>
                   <div className={`font-label-sm text-label-sm px-sm py-xs rounded-full ${getStatusColor(order.status)}`}>
                     {getStatusText(order.status)}
                   </div>
                 </div>
+
 
                 <div className="space-y-sm">
                   {order.items && order.items.map((item, index) => (
@@ -113,13 +114,18 @@ const Orders = () => {
                         </div>
                       </div>
                       <div className="flex-grow flex justify-between items-center">
-                        <div className="font-label-md text-label-md text-on-surface">Item {item.menu_item_id.substring(0,4)}</div>
+                        <div className="font-label-md text-label-md text-on-surface">{item.menu_item_name || `Item ${item.menu_item_id.substring(0, 4)}`}</div>
                         <div className="font-body-sm text-body-sm text-on-surface-variant bg-surface-container px-sm py-xs rounded-lg border border-surface-variant">
                           Qty: {item.quantity}
                         </div>
                       </div>
                     </div>
                   ))}
+                </div>
+                <hr className="border-surface-variant/50 my-md" />
+                <div className="flex justify-between items-center mt-md">
+                  <div className="font-headline-sm text-on-surface font-bold">Total</div>
+                  <div className="font-headline-sm text-on-surface font-bold text-primary">₹{order.total_amount}</div>
                 </div>
               </div>
             ))}

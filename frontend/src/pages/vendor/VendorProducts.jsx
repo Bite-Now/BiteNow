@@ -361,7 +361,7 @@ const VendorProducts = () => {
                 </div>
             </div>
 
-            <div className="bg-[#1c1b1b] rounded-[20px] border border-outline-variant/20 p-4 shadow-lg min-h-[400px] relative z-20 mx-2 -mt-3">
+            <div className="bg-[#1c1b1b] rounded-[20px] border border-outline-variant/20 p-4 shadow-lg flex flex-col h-[70vh] min-h-[500px] relative z-20 mx-2 -mt-3">
                 <div className="flex justify-between items-end mb-4 px-1 pb-2 border-b border-outline-variant/10">
                     <div>
                         <h2 className="text-on-surface font-bold text-lg">
@@ -408,7 +408,7 @@ const VendorProducts = () => {
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: -8, scale: 0.98 }}
                                         transition={{ duration: 0.25, ease: "easeOut" }}
-                                        className="flex flex-col h-full"
+                                        className="flex flex-col flex-1 min-h-0"
                                     >
                                         {!isEmpty && (
                                             <GoldenGlowButton
@@ -443,7 +443,7 @@ const VendorProducts = () => {
                                                 </GoldenGlowButton>
                                             </div>
                                         ) : (
-                                            <div className="flex flex-col gap-2">
+                                            <div className="flex flex-col gap-2 flex-1 overflow-y-auto no-scrollbar pb-4">
                                                 {filteredItems.map(item => (
                                                     <ProductCard
                                                         key={item.id}

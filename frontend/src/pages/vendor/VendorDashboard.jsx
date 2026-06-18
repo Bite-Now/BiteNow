@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
 import { getDashboardStats } from '../../services/ordersApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useCurrentCanteen } from '../../hooks/useCurrentCanteen';
@@ -19,8 +19,7 @@ const StatCard = ({ title, value, icon, colorClass }) => (
 const VendorDashboard = () => {
     const { currentUser } = useAuth();
     const { canteenName } = useCurrentCanteen();
-    
-    const [timeframe, setTimeframe] = useState('Monthly');
+
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -51,7 +50,7 @@ const VendorDashboard = () => {
         if (!scrollContainerRef.current || !dashboardData?.top_items) return;
         const { scrollLeft } = scrollContainerRef.current;
         // 140px min-w + 12px gap = 152px per item
-        const itemWidth = 152; 
+        const itemWidth = 152;
         const newIndex = Math.round(scrollLeft / itemWidth);
         setActiveItem(Math.min(Math.max(newIndex, 0), dashboardData.top_items.length - 1));
     };
@@ -72,22 +71,18 @@ const VendorDashboard = () => {
         );
     }
 
-    const chartData = timeframe === 'Monthly' ? dashboardData.monthly_data : dashboardData.yearly_data;
     const topItems = dashboardData.top_items || [];
 
     return (
         <div className="flex flex-col gap-6 w-full pb-32 pt-6 px-4 relative">
-            
+
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="font-display-sm text-on-surface">Hello {canteenName || currentUser?.name || 'Kitchen'}</h1>
                     <p className="text-on-surface-variant text-sm">Here's a quick overview of your business</p>
                 </div>
-                <button className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface relative">
-                    <span className="material-symbols-outlined">notifications</span>
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
-                </button>
+
             </div>
 
             {/* Metrics Grid */}
@@ -105,8 +100,8 @@ const VendorDashboard = () => {
                         <span className="material-symbols-outlined text-tertiary text-xl">local_fire_department</span>
                         <h2 className="text-on-surface font-semibold text-lg">Top Moving Items</h2>
                     </div>
-                    
-                    <div 
+
+                    <div
                         ref={scrollContainerRef}
                         onScroll={handleScroll}
                         className="flex gap-3 overflow-x-auto no-scrollbar pb-2 px-1 snap-x snap-mandatory"
@@ -124,65 +119,15 @@ const VendorDashboard = () => {
                     {/* Dots Indicator */}
                     <div className="flex justify-center items-center gap-2 mt-1">
                         {topItems.map((_, idx) => (
-                            <div 
+                            <div
                                 key={idx}
-                                className={`h-2 rounded-full transition-all duration-300 ${
-                                    activeItem === idx ? 'w-4 bg-primary' : 'w-2 bg-on-surface-variant/30'
-                                }`}
+                                className={`h-2 rounded-full transition-all duration-300 ${activeItem === idx ? 'w-4 bg-primary' : 'w-2 bg-on-surface-variant/30'
+                                    }`}
                             />
                         ))}
                     </div>
                 </div>
             )}
-
-            {/* Trend Chart */}
-            <div className="bg-surface-container rounded-[24px] p-5 shadow-sm border border-outline-variant/20 flex flex-col gap-4">
-                <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 rounded-full bg-primary"></div>
-                            <span className="text-xs text-on-surface-variant">Earnings</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 rounded-full bg-[#f59e0b]"></div>
-                            <span className="text-xs text-on-surface-variant">Orders</span>
-                        </div>
-                    </div>
-                    <select 
-                        className="bg-surface text-on-surface border border-outline-variant rounded-xl px-3 py-1 text-sm outline-none"
-                        value={timeframe}
-                        onChange={(e) => setTimeframe(e.target.value)}
-                    >
-                        <option value="Monthly">Monthly</option>
-                        <option value="Yearly">Yearly</option>
-                    </select>
-                </div>
-
-                <div className="h-[220px] w-full mt-2">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
-                                </linearGradient>
-                                <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
-                                </linearGradient>
-                            </defs>
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                            <Tooltip 
-                                contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#f8fafc' }}
-                                itemStyle={{ color: '#f8fafc' }}
-                            />
-                            <Area type="monotone" dataKey="earnings" stroke="#22c55e" strokeWidth={3} fillOpacity={1} fill="url(#colorEarnings)" />
-                            <Area type="monotone" dataKey="orders" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#colorOrders)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
 
         </div>
     );

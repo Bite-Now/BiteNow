@@ -29,7 +29,7 @@ const OrderHistory = () => {
     items.forEach(item => {
       const menuItem = {
         id: item.menu_item_id || Math.random().toString(),
-        name: `Item ${item.menu_item_id?.substring(0,4)}`,
+        name: item.menu_item_name || `Item ${item.menu_item_id?.substring(0,4)}`,
         price: item.unit_price,
         image: 'https://images.unsplash.com/photo-1599487405620-8e10629a2016?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
       };
@@ -76,7 +76,7 @@ const OrderHistory = () => {
                     <div>
                       <div className="flex items-center gap-xs mb-xs">
                         <span className="material-symbols-outlined text-primary text-[18px]">storefront</span>
-                        <h3 className="font-label-md text-label-md text-on-surface">Canteen {order.canteen_id?.substring(0,4)}</h3>
+                        <h3 className="font-label-md text-label-md text-on-surface">{order.canteen_name || `Canteen ${order.canteen_id?.substring(0,4)}`}</h3>
                       </div>
                       <div className="font-body-sm text-body-sm text-on-surface-variant">
                         Order {order.id.substring(0,8)}
@@ -90,7 +90,7 @@ const OrderHistory = () => {
                   <div className="mb-md">
                     {order.items && order.items.map((item, i) => (
                       <div key={i} className="font-body-sm text-body-sm text-on-surface mb-xs flex justify-between">
-                        <span>Item {item.menu_item_id?.substring(0,4)} <span className="text-on-surface-variant text-[12px]">x{item.quantity}</span></span>
+                        <span>{item.menu_item_name || `Item ${item.menu_item_id?.substring(0,4)}`} <span className="text-on-surface-variant text-[12px]">x{item.quantity}</span></span>
                         <span>₹{item.unit_price * item.quantity}</span>
                       </div>
                     ))}

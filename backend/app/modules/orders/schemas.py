@@ -16,6 +16,7 @@ class OrderCreateRequest(BaseModel):
 class OrderItemResponse(BaseModel):
     id: UUID
     menu_item_id: UUID
+    menu_item_name: Optional[str] = None
     quantity: int
     unit_price: Decimal
 
@@ -25,6 +26,7 @@ class OrderResponse(BaseModel):
     id: UUID
     student_id: UUID
     canteen_id: UUID
+    canteen_name: Optional[str] = None
     order_number: Optional[int] = None
     status: str
     total_amount: Decimal
