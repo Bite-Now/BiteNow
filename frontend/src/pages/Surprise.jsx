@@ -87,7 +87,7 @@ const PopularPicksCarousel = () => {
 const Surprise = () => {
     const navigate = useNavigate();
     const { addToCart, getTotalItems } = useCartStore();
-    const { currentBalance } = useWalletStore();
+    const { remainingBalance } = useWalletStore();
     const totalCartItems = getTotalItems();
     
     // State

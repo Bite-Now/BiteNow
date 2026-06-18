@@ -23,7 +23,7 @@ const Canteen = () => {
     
     // Budget Mode state
     const [budgetMode, setBudgetMode] = useState(false);
-    const currentBalance = useWalletStore((state) => state.currentBalance);
+    const currentBalance = useWalletStore((state) => state.remainingBalance);
 
     useEffect(() => {
         const fetchCanteenMenu = async () => {

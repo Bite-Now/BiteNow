@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useWalletStore } from '../store/useWalletStore';
-import { generateMockTransactions } from '../utils/walletSeeder';
 import CollapsibleSection from '../components/common/CollapsibleSection';
 import { WalletAnalytics } from '../components/wallet/WalletAnalytics';
 import { WalletLedger } from '../components/wallet/WalletLedger';
 
 const WalletGauge = ({ spent, total }) => {
-    const percentage = Math.min((spent / total) * 100, 100);
+    const safeTotal = total || 1; // prevent division by zero
+    const percentage = Math.min((spent / safeTotal) * 100, 100);
     const radius = 120;
     const circumference = Math.PI * radius;
     const strokeDashoffset = circumference - (percentage / 100) * circumference;
     
     // Cyberpunk glow color logic
-    const isOver = spent >= total;
+    const isOver = spent >= safeTotal;
     const isWarning = percentage > 80 && !isOver;
     const strokeColor = isOver ? '#ef4444' : isWarning ? '#eab308' : '#22c55e'; // red-500, yellow-500, green-500
     
@@ -54,7 +54,7 @@ const WalletGauge = ({ spent, total }) => {
             <div className="absolute bottom-2 flex flex-col items-center">
                 <p className="text-on-surface-variant font-body-sm mb-1 uppercase tracking-wider text-xs">Remaining Balance</p>
                 <h2 className="text-4xl font-bold text-on-surface drop-shadow-md">
-                    ₹{Math.max(0, total - spent)}
+                    ₹{Math.max(0, Math.round(total - spent))}
                 </h2>
             </div>
         </div>
@@ -63,32 +63,47 @@ const WalletGauge = ({ spent, total }) => {
 
 const Budget = () => {
     const { 
-        weeklyLimit, 
-        currentBalance, 
-        setWeeklyLimit,
-        transactions,
-        seedTransactions
+        monthlyLimit, 
+        totalSpentThisMonth, 
+        remainingBalance,
+        loading,
+        fetchWalletData,
+        updateBudgetLimit,
     } = useWalletStore();
     
     const [isEditingBudget, setIsEditingBudget] = useState(false);
-    const [tempBudget, setTempBudget] = useState(weeklyLimit);
+    const [tempBudget, setTempBudget] = useState(monthlyLimit || 5000);
 
     useEffect(() => {
-        // Seed mock transactions if empty for demonstration
-        if (transactions.length === 0) {
-            seedTransactions(generateMockTransactions());
+        fetchWalletData();
+    }, [fetchWalletData]);
+
+    // Keep tempBudget in sync when monthlyLimit loads from the backend
+    useEffect(() => {
+        if (monthlyLimit !== null) {
+            setTempBudget(monthlyLimit);
         }
-    }, [transactions.length, seedTransactions]);
+    }, [monthlyLimit]);
 
-    const spent = weeklyLimit - currentBalance;
+    const spent = totalSpentThisMonth;
+    const limit = monthlyLimit || 5000;
 
-    const handleSaveBudget = () => {
+    const handleSaveBudget = async () => {
         const value = parseInt(tempBudget);
         if (!isNaN(value) && value > 0) {
-            setWeeklyLimit(value);
+            await updateBudgetLimit(value);
         }
         setIsEditingBudget(false);
     };
+
+    if (loading && monthlyLimit === null) {
+        return (
+            <div className="flex flex-col min-h-screen bg-background text-on-surface items-center justify-center">
+                <span className="material-symbols-outlined text-primary text-4xl animate-spin">progress_activity</span>
+                <p className="text-on-surface-variant mt-4 text-sm">Loading wallet...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col min-h-screen bg-background dark:bg-background text-on-surface pb-48 font-body-md transition-colors duration-300">
@@ -108,11 +123,11 @@ const Budget = () => {
                         {/* Glowing background accent */}
                         <div className="absolute -top-10 -left-10 w-48 h-48 bg-primary/10 rounded-full blur-[60px] pointer-events-none"></div>
                         
-                        <WalletGauge spent={spent} total={weeklyLimit} />
+                        <WalletGauge spent={spent} total={limit} />
                         
                         <div className="flex justify-between items-end mt-6 border-t border-outline-variant/30 pt-4 relative z-10">
                             <div className="flex flex-col">
-                                <span className="text-on-surface-variant text-xs uppercase tracking-wider mb-1">Weekly Limit</span>
+                                <span className="text-on-surface-variant text-xs uppercase tracking-wider mb-1">Monthly Limit</span>
                                 {isEditingBudget ? (
                                     <div className="flex items-center gap-2">
                                         <span className="text-on-surface-variant">₹</span>
@@ -125,7 +140,7 @@ const Budget = () => {
                                         />
                                     </div>
                                 ) : (
-                                    <span className="text-lg font-semibold text-on-surface">₹{weeklyLimit}</span>
+                                    <span className="text-lg font-semibold text-on-surface">₹{limit}</span>
                                 )}
                             </div>
                             

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../../store/useCartStore';
 import { useAuth } from '@clerk/clerk-react';
 import { mockPaymentSuccess, mockPaymentFailed } from '../../services/ordersApi';
+import { useWalletStore } from '../../store/useWalletStore';
 
 const MockPayment = () => {
     const navigate = useNavigate();
@@ -34,7 +35,10 @@ const MockPayment = () => {
                 return;
             }
 
-            // Success
+            // Success — update wallet spending instantly
+            if (data.total_spent_this_month !== undefined) {
+                useWalletStore.getState().onOrderPlaced(data.total_spent_this_month);
+            }
             clearCart();
             navigate('/orders');
         } catch (err) {

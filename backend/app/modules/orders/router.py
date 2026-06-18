@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from uuid import UUID
 from typing import List
 
@@ -27,16 +28,41 @@ def get_order_service(db: AsyncSession = Depends(get_db)) -> OrderService:
 # Mock Payment
 # -----------------
 
-@payments_router.post("/mock-success", response_model=OrderResponse)
+@payments_router.post("/mock-success")
 async def mock_payment_success(
     request: OrderCreateRequest,
     user: User = Depends(require_strict_student),
-    service: OrderService = Depends(get_order_service)
+    service: OrderService = Depends(get_order_service),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Simulates a successful payment and creates the PAID order statelessly.
+    Also returns updated monthly spending for the student wallet.
     """
-    return await service.create_paid_order(user.id, request)
+    from sqlalchemy import func as sqlfunc, extract
+    from datetime import datetime, timezone
+    from app.modules.orders.models import Order as OrderModel
+
+    order = await service.create_paid_order(user.id, request)
+
+    # Calculate updated monthly spending
+    now = datetime.now(timezone.utc)
+    stmt = (
+        select(sqlfunc.coalesce(sqlfunc.sum(OrderModel.total_amount), 0))
+        .where(
+            OrderModel.student_id == user.id,
+            extract("month", OrderModel.created_at) == now.month,
+            extract("year", OrderModel.created_at) == now.year,
+            OrderModel.status.in_(["PAID", "PREPARING", "READY", "PICKED_UP"])
+        )
+    )
+    result = await db.execute(stmt)
+    total_spent = float(result.scalar())
+
+    # Return order data + wallet update
+    order_data = OrderResponse.model_validate(order).model_dump()
+    order_data["total_spent_this_month"] = total_spent
+    return order_data
 
 @payments_router.post("/mock-failed")
 async def mock_payment_failed(

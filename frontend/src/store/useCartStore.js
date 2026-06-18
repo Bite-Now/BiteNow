@@ -45,15 +45,14 @@ export const useCartStore = create((set, get) => ({
         if (state.items.length === 0) return false;
         
         const total = state.getTotalPrice();
-        const canteenId = state.items[0]?.canteenId || 'Mixed'; // Simplify for mock
-
         const walletState = useWalletStore.getState();
         
-        if (total > walletState.currentBalance) {
+        if (total > walletState.remainingBalance) {
             return false; // Insufficient funds
         }
         
-        walletState.processOrderDeduction(total, canteenId, 'Food Order');
+        // Note: The actual order placement is handled by MockPayment.jsx,
+        // which calls the API and updates the wallet store via onOrderPlaced.
         state.clearCart();
         return true;
     }
