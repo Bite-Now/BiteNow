@@ -9,6 +9,9 @@ import Orders from './pages/Orders';
 import OrderHistory from './pages/OrderHistory';
 import Surprise from './pages/Surprise';
 import Budget from './pages/Budget';
+import SettingsLayout from './pages/settings/SettingsLayout';
+import PersonalProfile from './pages/settings/PersonalProfile';
+import CanteenSettings from './pages/settings/CanteenSettings';
 import Unauthorized from './pages/Unauthorized';
 import MainLayout from './components/layout/MainLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -23,10 +26,10 @@ import VendorEarnings from './pages/vendor/VendorEarnings';
 import VendorStaff from './pages/vendor/VendorStaff';
 
 // Dummy components for missing dashboards to satisfy router
-const StaffDashboard = () => <div className="p-8 text-white">Staff Dashboard</div>;
 const AdminDashboard = () => <div className="p-8 text-white">Admin Dashboard</div>;
 
 function App() {
+  
   return (
     <AuthProvider>
       <Routes>
@@ -50,7 +53,9 @@ function App() {
         </Route>
 
         {/* Protected Routes - STAFF */}
-        <Route path="/staff" element={<ProtectedRoute allowedRoles={['STAFF']}><StaffDashboard /></ProtectedRoute>} />
+        <Route element={<ProtectedRoute allowedRoles={['STAFF']}><MainLayout /></ProtectedRoute>}>
+          <Route path="/staff" element={<VendorOrders />} />
+        </Route>
 
         {/* Protected Routes - OWNER (Vendor) */}
         <Route element={<ProtectedRoute allowedRoles={['OWNER']}><MainLayout /></ProtectedRoute>}>
@@ -64,6 +69,13 @@ function App() {
         {/* Protected Routes - ADMIN */}
         <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
 
+        {/* Shared Protected Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['STUDENT', 'STAFF', 'OWNER', 'ADMIN']}><MainLayout /></ProtectedRoute>}>
+            <Route path="/settings" element={<SettingsLayout />}>
+                <Route path="profile" element={<PersonalProfile />} />
+                <Route path="canteen" element={<CanteenSettings />} />
+            </Route>
+        </Route>
         {/* Catch all unknown routes */}
         <Route path="*" element={<RoleRedirect />} />
       </Routes>

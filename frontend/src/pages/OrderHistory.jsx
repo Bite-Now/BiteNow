@@ -5,26 +5,20 @@ import { useCartStore } from '../store/useCartStore';
 
 const OrderHistory = () => {
   const navigate = useNavigate();
-  const addItem = useCartStore(state => state.addItem);
+  const addToCart = useCartStore(state => state.addToCart);
 
   const handleReorder = (items) => {
-    // Add all items from the past order to the current cart
     items.forEach(item => {
-      // Create a mock menu item format to add
       const menuItem = {
-        id: item.id || Math.random().toString(), // fallback
+        id: item.id || Math.random().toString(),
         name: item.name,
         price: item.price,
-        image: 'https://images.unsplash.com/photo-1599487405620-8e10629a2016?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80' // default fallback image
+        image: 'https://images.unsplash.com/photo-1599487405620-8e10629a2016?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
       };
-      // Add the requested quantity
-      for(let i=0; i<item.quantity; i++) {
-        addItem(menuItem);
+      for(let i = 0; i < item.quantity; i++) {
+        addToCart(menuItem, item.canteenId || 'c1');
       }
     });
-    // Navigate to the cart (if we have a cart checkout page, but we are moving Orders to tracking)
-    // For now we'll just show an alert or let them know it's added.
-    alert('Items added to your cart!');
   };
 
   return (

@@ -25,22 +25,12 @@ const Orders = () => {
 
   return (
     <div className="font-body-md flex flex-col pb-32 md:pb-8 relative">
-      {/* TopAppBar */}
-      <header className="sticky top-0 z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-md shadow-lg shadow-primary/5 flex justify-between items-center px-container-margin py-md">
-        <div className="flex items-center gap-sm">
-          <span className="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style={{ fontVariationSettings: '"FILL" 1' }}>restaurant_menu</span>
-          <span className="font-headline-md text-headline-md-mobile font-bold text-primary dark:text-primary-fixed-dim">BiteNow</span>
-        </div>
-        <div className="flex items-center gap-sm">
+      <main className="flex-grow container mx-auto px-container-margin max-w-2xl">
+        <div className="flex justify-between items-center mb-lg mt-md">
+          <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Live Tracking</h1>
           <button onClick={() => navigate('/history')} className="p-xs text-on-surface hover:text-primary transition-colors active:scale-95">
             <span className="material-symbols-outlined text-[24px]">history</span>
           </button>
-        </div>
-      </header>
-
-      <main className="flex-grow container mx-auto px-container-margin max-w-2xl">
-        <div className="flex justify-between items-end mb-lg mt-md">
-          <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Live Tracking</h1>
         </div>
 
         {MOCK_ORDERS.length === 0 ? (

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import ProfileDropdown from '../components/common/ProfileDropdown';
 import { useWalletStore } from '../store/useWalletStore';
-import { WalletAnalytics } from '../components/wallet/WalletAnalytics';
-import { WalletLedger } from '../components/wallet/WalletLedger';
 import { generateMockTransactions } from '../utils/walletSeeder';
 import CollapsibleSection from '../components/common/CollapsibleSection';
+import { WalletAnalytics } from '../components/wallet/WalletAnalytics';
+import { WalletLedger } from '../components/wallet/WalletLedger';
 
 const WalletGauge = ({ spent, total }) => {
     const percentage = Math.min((spent / total) * 100, 100);
@@ -93,24 +92,16 @@ const Budget = () => {
 
     return (
         <div className="flex flex-col min-h-screen bg-background dark:bg-background text-on-surface pb-48 font-body-md transition-colors duration-300">
-            {/* Header */}
-            <header className="sticky top-0 z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-md shadow-lg shadow-primary/5 flex justify-between items-center px-6 py-4">
-                <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-primary text-2xl drop-shadow-sm">
-                        account_balance_wallet
-                    </span>
-                    <h1 className="font-headline-md text-xl font-bold text-primary">Wallet</h1>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="bg-primary-container/80 text-on-primary-container border border-primary/20 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm flex items-center gap-1.5 backdrop-blur-md">
-                        <span className="material-symbols-outlined text-[16px]">account_balance</span>
-                        <span>₹{Math.max(0, currentBalance)}</span>
-                    </div>
-                    <ProfileDropdown />
-                </div>
-            </header>
-
             <main className="px-6 flex flex-col gap-6 pt-4">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-primary text-2xl drop-shadow-sm">
+                            account_balance_wallet
+                        </span>
+                        <h1 className="font-headline-md text-xl font-bold text-primary">Wallet</h1>
+                    </div>
+
+                </div>
                 {/* Hero Section */}
                 <CollapsibleSection title="Budget Overview" icon="speed" defaultOpen={true}>
                     <div className="relative">
@@ -153,8 +144,6 @@ const Budget = () => {
                 
                 {/* Analytics */}
                 <WalletAnalytics />
-                
-                {/* Ledger */}
                 <WalletLedger />
             </main>
         </div>

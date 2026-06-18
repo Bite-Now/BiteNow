@@ -24,6 +24,8 @@ const BottomNavBar = () => {
     const scrollDirection = useScrollDirection();
     const { role } = useAuth();
     
+    if (role === 'STAFF') return null;
+
     const currentNavItems = role === 'OWNER' ? VENDOR_NAV_ITEMS : STUDENT_NAV_ITEMS;
     const mainTabPaths = currentNavItems.map(item => item.path);
     

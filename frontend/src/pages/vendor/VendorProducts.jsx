@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { mockVendorProducts } from '../../data/mockVendorData';
 import CollapsibleSection from '../../components/common/CollapsibleSection';
+import GlassModal from '../../components/ui/GlassModal';
+import GlassInput from '../../components/ui/GlassInput';
+import GlassButton from '../../components/ui/GlassButton';
+import GoldenGlowButton from '../../components/ui/GoldenGlowButton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Add Product Modal ---
 const AddProductModal = ({ isOpen, onClose, onAdd, categoryId, categoryName }) => {
@@ -29,142 +34,100 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryId, categoryName }) =
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-surface-container rounded-2xl w-full max-w-md p-6 border border-outline-variant/20 shadow-xl">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-on-surface">
-                        Add to {categoryName || 'Menu'}
-                    </h2>
-                    <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface">
-                        <span className="material-symbols-outlined">close</span>
-                    </button>
+        <GlassModal 
+            isOpen={isOpen} 
+            onClose={onClose}
+            title={`Add to ${categoryName || 'Menu'}`}
+        >
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <GlassInput 
+                    label="Image URL" 
+                    value={image}
+                    onChange={(e) => setImage(e.target.value)}
+                />
+                
+                <GlassInput 
+                    label="Product Name" 
+                    required 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                />
+
+                <GlassInput 
+                    label="Price" 
+                    required 
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                />
+
+                {/* Using standard textarea styled similarly since GlassInput is for text inputs */}
+                <div className="relative">
+                    <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-xl border border-white/10 pointer-events-none transition-colors peer-focus:border-white/30"></div>
+                    <textarea 
+                        className="peer relative w-full bg-transparent text-white placeholder-white/40 focus:outline-none focus:ring-0 text-sm px-4 py-3 resize-none h-20"
+                        placeholder="Description"
+                        value={desc}
+                        onChange={(e) => setDesc(e.target.value)}
+                    />
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    {/* Image URL Mock */}
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs text-on-surface-variant font-medium ml-1">Image URL</label>
-                        <input 
-                            type="text" 
-                            className="bg-surface border border-outline-variant/30 rounded-xl px-4 py-3 text-sm text-on-surface outline-none focus:border-primary"
-                            placeholder="https://example.com/image.jpg"
-                            value={image}
-                            onChange={(e) => setImage(e.target.value)}
-                        />
-                    </div>
-                    
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs text-on-surface-variant font-medium ml-1">Product Name *</label>
-                        <input 
-                            type="text" 
-                            required
-                            className="bg-surface border border-outline-variant/30 rounded-xl px-4 py-3 text-sm text-on-surface outline-none focus:border-primary"
-                            placeholder="e.g. Garlic Naan"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs text-on-surface-variant font-medium ml-1">Price *</label>
-                        <input 
-                            type="text" 
-                            required
-                            className="bg-surface border border-outline-variant/30 rounded-xl px-4 py-3 text-sm text-on-surface outline-none focus:border-primary"
-                            placeholder="e.g. 50"
-                            value={price}
-                            onChange={(e) => setPrice(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs text-on-surface-variant font-medium ml-1">Description</label>
-                        <textarea 
-                            className="bg-surface border border-outline-variant/30 rounded-xl px-4 py-3 text-sm text-on-surface outline-none focus:border-primary resize-none h-20"
-                            placeholder="Brief description of the item..."
-                            value={desc}
-                            onChange={(e) => setDesc(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="flex gap-3 mt-4">
-                        <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border border-outline-variant/50 text-on-surface font-bold hover:bg-surface transition-colors">
-                            Cancel
-                        </button>
-                        <button type="submit" className="flex-1 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-[0_4px_14px_0_rgba(255,159,67,0.39)] transition-transform active:scale-[0.98]">
+                <div className="flex gap-3 mt-4">
+                    <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border border-outline-variant/50 text-white font-bold hover:bg-white/5 transition-colors">
+                        Cancel
+                    </button>
+                    <div className="flex-1">
+                        <GlassButton type="submit">
                             Add Product
-                        </button>
+                        </GlassButton>
                     </div>
-                </form>
-            </div>
-        </div>
+                </div>
+            </form>
+        </GlassModal>
     );
 };
 
 // --- Product Card ---
 const ProductCard = ({ item, isSpecial, onToggleStock, onChangeCap }) => {
     return (
-        <div className="flex flex-col gap-1">
-            <div className="bg-surface rounded-xl p-3 flex gap-3 shadow-sm border border-outline-variant/10">
-                {/* Image Thumbnail */}
-                <div className="w-[72px] h-[72px] rounded-lg overflow-hidden shrink-0 bg-surface-container">
-                    {item.image ? (
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
-                            <span className="material-symbols-outlined text-3xl">restaurant</span>
-                        </div>
+        <div className="bg-surface-container rounded-xl p-2.5 flex gap-3 shadow-sm border border-outline-variant/20 mb-2 hover:border-outline-variant/40 transition-all group">
+            {/* Left Side: Content */}
+            <div className="flex flex-col flex-1 min-w-0">
+                <h4 className="text-on-surface font-bold text-[15px] truncate">{item.name}</h4>
+                <p className="text-on-surface-variant text-[12px] mt-0.5 line-clamp-2 leading-snug">{item.description}</p>
+                <div className="mt-auto pt-1.5 flex items-center gap-2">
+                    <p className="text-on-surface font-bold text-[14px]">{item.price}</p>
+                    {isSpecial && (
+                        <span className="text-primary text-[10px] font-bold uppercase tracking-wider bg-primary/10 px-1.5 py-0.5 rounded">Special</span>
                     )}
-                </div>
-
-                {/* Content Middle */}
-                <div className="flex flex-col flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                        <h4 className="text-on-surface font-bold text-[15px] truncate pr-2">{item.name}</h4>
-                        {/* Toggle Switch */}
-                        <label className="flex items-center cursor-pointer shrink-0 mt-0.5" onClick={(e) => e.stopPropagation()}>
-                            <div className="relative">
-                                <input 
-                                    type="checkbox" 
-                                    className="sr-only" 
-                                    checked={item.inStock} 
-                                    onChange={() => onToggleStock(item.id)} 
-                                />
-                                <div className={`block w-9 h-5 rounded-full transition-colors ${item.inStock ? 'bg-[#22c55e]' : 'bg-surface-variant'}`}></div>
-                                <div className={`dot absolute left-[2px] top-[2px] bg-white w-4 h-4 rounded-full transition-transform ${item.inStock ? 'transform translate-x-4' : ''}`}></div>
-                            </div>
-                        </label>
-                    </div>
-                    
-                    <p className="text-on-surface-variant text-[11px] mt-0.5 line-clamp-2">{item.description}</p>
-                    
-                    <div className="flex items-end justify-between mt-auto">
-                        <p className="text-on-surface font-bold text-[13px]">{item.price}</p>
-                    </div>
                 </div>
             </div>
 
-            {/* Special Menu Quantity Cap */}
-            {isSpecial && (
-                <div className="flex justify-between items-center bg-surface-container p-2 px-3 rounded-lg border border-outline-variant/20 mx-1">
-                    <span className="text-on-surface-variant text-[11px] font-bold uppercase tracking-wider">Daily Cap</span>
-                    <div className="flex items-center gap-3">
-                        <button 
-                            className="w-6 h-6 rounded-full bg-surface flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors border border-outline-variant/50"
-                            onClick={() => onChangeCap(item.id, Math.max(0, item.cap - 1))}
-                        >
-                            <span className="material-symbols-outlined text-[14px]">remove</span>
-                        </button>
-                        <span className="text-on-surface font-bold text-sm min-w-[24px] text-center">{item.cap}</span>
-                        <button 
-                            className="w-6 h-6 rounded-full bg-surface flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors border border-outline-variant/50"
-                            onClick={() => onChangeCap(item.id, item.cap + 1)}
-                        >
-                            <span className="material-symbols-outlined text-[14px]">add</span>
-                        </button>
-                    </div>
+            {/* Right Side: Image & Toggle */}
+            <div className="flex flex-col items-end justify-between shrink-0">
+                <div className="w-[68px] h-[68px] rounded-lg overflow-hidden bg-surface shadow-sm border border-outline-variant/10">
+                    {item.image ? (
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
+                            <span className="material-symbols-outlined text-2xl">restaurant</span>
+                        </div>
+                    )}
                 </div>
-            )}
+                
+                {/* Visibility Toggle Switch */}
+                <label className="flex items-center cursor-pointer mt-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative">
+                        <input 
+                            type="checkbox" 
+                            className="sr-only" 
+                            checked={item.inStock} 
+                            onChange={() => onToggleStock(item.id)} 
+                        />
+                        <div className={`block w-10 h-5 rounded-full transition-colors ${item.inStock ? 'bg-[#22c55e]' : 'bg-surface-variant'}`}></div>
+                        <div className={`dot absolute left-[2px] top-[2px] bg-white w-4 h-4 rounded-full transition-transform ${item.inStock ? 'transform translate-x-5' : ''}`}></div>
+                    </div>
+                </label>
+            </div>
         </div>
     );
 };
@@ -172,7 +135,31 @@ const ProductCard = ({ item, isSpecial, onToggleStock, onChangeCap }) => {
 const VendorProducts = () => {
     const [products, setProducts] = useState(mockVendorProducts);
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeCategoryId, setActiveCategoryId] = useState('special');
     const [modalConfig, setModalConfig] = useState({ isOpen: false, categoryId: null, categoryName: '' });
+    const [isLoading, setIsLoading] = useState(true);
+    
+    // Category addition state
+    const [isAddingCategory, setIsAddingCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+
+    const tabRefs = useRef({});
+    const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => setIsLoading(false), 800);
+        return () => clearTimeout(timer);
+    }, []);
+
+    React.useEffect(() => {
+        const el = tabRefs.current[activeCategoryId];
+        if (el) {
+            setIndicatorStyle({
+                left: el.offsetLeft,
+                width: el.offsetWidth,
+            });
+        }
+    }, [activeCategoryId]);
 
     const toggleStock = (itemId) => {
         setProducts(prev => {
@@ -214,23 +201,40 @@ const VendorProducts = () => {
         setModalConfig({ isOpen: true, categoryId, categoryName });
     };
 
+    const handleAddCategory = (e) => {
+        e.preventDefault();
+        const trimmedName = newCategoryName.trim();
+        if (!trimmedName) {
+            setIsAddingCategory(false);
+            return;
+        }
+
+        const newId = 'cat_' + Date.now();
+        setProducts(prev => ({
+            ...prev,
+            categories: [...prev.categories, { id: newId, name: trimmedName, items: [] }]
+        }));
+        
+        setActiveCategoryId(newId);
+        setIsAddingCategory(false);
+        setNewCategoryName('');
+    };
+
+    const cancelAddCategory = () => {
+        setIsAddingCategory(false);
+        setNewCategoryName('');
+    };
+
     return (
         <div className="flex flex-col gap-4 w-full pb-32 pt-4 px-3 relative bg-background">
             
             {/* Header */}
             <div className="flex justify-between items-center px-1 mt-2">
                 <div className="flex items-center gap-3">
-                    <button className="w-8 h-8 flex items-center justify-center text-on-surface rounded-full hover:bg-surface-container">
-                        <span className="material-symbols-outlined text-[20px]">arrow_back_ios_new</span>
-                    </button>
-                    <h1 className="text-xl font-bold text-on-surface">Products</h1>
+                    
+                    <h1 className="text-xl font-bold text-on-surface ml-4 ">Products</h1>
                 </div>
-                <button 
-                    onClick={() => openAddModal(products.categories[0]?.id, products.categories[0]?.name)}
-                    className="w-8 h-8 flex items-center justify-center text-on-surface rounded-full border border-outline-variant/50 hover:bg-surface-container"
-                >
-                    <span className="material-symbols-outlined text-[22px]">add</span>
-                </button>
+               
             </div>
 
             {/* Search Bar */}
@@ -245,63 +249,197 @@ const VendorProducts = () => {
                 />
             </div>
 
-            {/* Special Menu Section (Always Expanded) */}
-            <div className="mt-4 px-1">
-                <div className="flex items-center gap-2 mb-3 px-1">
-                    <span className="material-symbols-outlined text-primary text-xl">star</span>
-                    <h2 className="text-on-surface font-bold text-lg">Today's Special ({products.specialMenu.length})</h2>
+            {/* Category Navigation System */}
+            <div className="relative w-full mt-4 flex flex-col gap-2">
+                {/* Separate Add Category Action - Above Tabs */}
+                <div className="flex justify-end px-2 h-[34px]">
+                    {isAddingCategory ? (
+                        <form 
+                            onSubmit={handleAddCategory} 
+                            className="flex items-center gap-1 bg-surface-container rounded-lg border border-primary/50 overflow-hidden shadow-sm"
+                        >
+                            <input 
+                                type="text" 
+                                autoFocus
+                                value={newCategoryName}
+                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Escape' && cancelAddCategory()}
+                                placeholder="New category..." 
+                                className="bg-transparent text-sm text-on-surface px-3 py-1.5 outline-none w-[120px] placeholder:text-on-surface-variant/50"
+                            />
+                            <button 
+                                type="button" 
+                                onClick={cancelAddCategory}
+                                className="text-on-surface-variant hover:text-error transition-colors px-1"
+                            >
+                                <span className="material-symbols-outlined text-[16px]">close</span>
+                            </button>
+                            <button 
+                                type="submit" 
+                                className="text-primary hover:text-primary-container transition-colors pr-2 pl-1"
+                            >
+                                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                            </button>
+                        </form>
+                    ) : (
+                        <button 
+                            onClick={() => setIsAddingCategory(true)}
+                            className="flex items-center gap-1 text-xs font-bold text-on-surface-variant hover:text-primary transition-colors py-1.5 px-3 rounded-lg border border-outline-variant/10 bg-surface-container"
+                        >
+                            <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                            Category
+                        </button>
+                    )}
                 </div>
-                <div className="flex flex-col gap-4 bg-surface-container-low rounded-3xl p-4 border border-outline-variant/30 shadow-sm">
-                    {products.specialMenu.map(item => (
-                        <ProductCard 
-                            key={item.id} 
-                            item={item} 
-                            isSpecial={true} 
-                            onToggleStock={toggleStock}
-                            onChangeCap={changeCap}
+
+                <div className="relative w-full">
+                    {/* Left Edge Fade */}
+                    <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-background to-transparent z-[35] pointer-events-none" />
+                    {/* Right Edge Fade */}
+                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-[35] pointer-events-none" />
+
+                    <div className="relative flex overflow-x-auto no-scrollbar gap-1 px-2 pt-2 pb-3 snap-x">
+
+                        {/* Single shared indicator — rendered ONCE, animates position */}
+                        <motion.div
+                            className="absolute top-0 bottom-3 bg-[#1c1b1b] rounded-t-[16px] border border-outline-variant/20 border-b-0 z-0 pointer-events-none"
+                            animate={indicatorStyle}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         />
-                    ))}
-                    <button 
-                        onClick={() => openAddModal('special', "Today's Special")}
-                        className="w-full py-3 mt-2 rounded-xl border border-primary text-primary font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors"
-                    >
-                        <span className="material-symbols-outlined text-[20px]">add</span>
-                        Add special item
-                    </button>
+
+                        {/* Special Tab */}
+                        <button
+                            ref={el => tabRefs.current['special'] = el}
+                            onClick={() => setActiveCategoryId('special')}
+                            className={`relative px-5 py-3 pb-5 text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 snap-start z-10 ${
+                                activeCategoryId === 'special'
+                                    ? 'text-primary'
+                                    : 'text-on-surface-variant hover:text-on-surface'
+                            }`}
+                        >
+                            <span className="material-symbols-outlined text-[18px]">star</span>
+                            Today's Special
+                        </button>
+
+                        {/* Dynamic Categories */}
+                        {products.categories.map(category => (
+                            <button
+                                key={category.id}
+                                ref={el => tabRefs.current[category.id] = el}
+                                onClick={() => setActiveCategoryId(category.id)}
+                                className={`relative px-5 py-3 pb-5 text-sm font-bold whitespace-nowrap transition-colors snap-start z-10 ${
+                                    activeCategoryId === category.id
+                                        ? 'text-[#e5e2e1]'
+                                        : 'text-on-surface-variant hover:text-on-surface'
+                                }`}
+                            >
+                                {category.name}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            {/* Standard Menu Categories (Collapsible) */}
-            <div className="flex flex-col gap-3 mt-4 px-1">
-                {products.categories.map(category => (
-                    <CollapsibleSection 
-                        key={category.id} 
-                        title={`${category.name}(${category.items.length})`}
-                        defaultOpen={false}
-                        headerRight={
-                            <span className="material-symbols-outlined text-[#22c55e] text-[18px]">edit</span>
-                        }
-                    >
-                        <div className="flex flex-col gap-4 mt-2 mb-2">
-                            {category.items.map(item => (
-                                <ProductCard 
-                                    key={item.id} 
-                                    item={item} 
-                                    isSpecial={false} 
-                                    onToggleStock={toggleStock}
-                                />
-                            ))}
-                            
-                            <button 
-                                onClick={() => openAddModal(category.id, category.name)}
-                                className="w-full py-3 mt-2 rounded-xl border border-[#22c55e] text-[#22c55e] font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#22c55e]/5 transition-colors"
-                            >
-                                <span className="material-symbols-outlined text-[20px]">add</span>
-                                Add product
-                            </button>
+            {/* Active Category Content Container */}
+            <div className="bg-[#1c1b1b] rounded-[20px] border border-outline-variant/20 p-4 shadow-lg min-h-[400px] relative z-20 mx-2 -mt-3">
+                {/* Sub-header with Title */}
+                <div className="flex justify-between items-end mb-4 px-1 pb-2 border-b border-outline-variant/10">
+                    <div>
+                        <h2 className="text-on-surface font-bold text-lg">
+                            {activeCategoryId === 'special' ? "Today's Special" : products.categories.find(c => c.id === activeCategoryId)?.name}
+                        </h2>
+                        <p className="text-on-surface-variant text-xs mt-0.5">
+                            {activeCategoryId === 'special' 
+                                ? `${products.specialMenu.length} Active Products` 
+                                : `${products.categories.find(c => c.id === activeCategoryId)?.items.filter(i => i.inStock).length || 0} Active Products`
+                            }
+                        </p>
+                    </div>
+                </div>
+
+                {isLoading ? (
+                    [1, 2, 3].map(i => (
+                        <div key={i} className="flex gap-3 bg-surface-container rounded-xl p-2.5 mb-2 border border-outline-variant/10 animate-pulse">
+                            <div className="flex-1 flex flex-col justify-center gap-2">
+                                <div className="h-4 w-3/4 bg-surface-variant rounded"></div>
+                                <div className="h-3 w-full bg-surface-variant rounded"></div>
+                                <div className="h-4 w-16 bg-surface-variant rounded mt-2"></div>
+                            </div>
+                            <div className="w-[68px] h-[68px] rounded-lg bg-surface-variant shrink-0"></div>
                         </div>
-                    </CollapsibleSection>
-                ))}
+                    ))
+                ) : (
+                    <>
+                        {(() => {
+                            const activeItems = activeCategoryId === 'special' 
+                                ? products.specialMenu 
+                                : products.categories.find(c => c.id === activeCategoryId)?.items || [];
+                            
+                            const isEmpty = activeItems.length === 0;
+
+                            return (
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={activeCategoryId}
+                                        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                                        transition={{ duration: 0.25, ease: "easeOut" }}
+                                        className="flex flex-col h-full"
+                                    >
+                                        {!isEmpty && (
+                                            <GoldenGlowButton 
+                                                onClick={() => openAddModal(
+                                                    activeCategoryId, 
+                                                    activeCategoryId === 'special' ? "Today's Special" : products.categories.find(c => c.id === activeCategoryId)?.name
+                                                )}
+                                                className="w-full mb-4 shrink-0"
+                                            >
+                                                <span className="material-symbols-outlined text-[20px]">add</span>
+                                                {activeCategoryId === 'special' ? "Add special item" : "Add product"}
+                                            </GoldenGlowButton>
+                                        )}
+
+                                        {isEmpty ? (
+                                            <div className="flex flex-col items-center justify-center py-12 px-4 text-center mt-8">
+                                                <div className="w-16 h-16 rounded-full bg-surface-variant/20 flex items-center justify-center mb-4">
+                                                    <span className="material-symbols-outlined text-3xl text-on-surface-variant">
+                                                        {activeCategoryId === 'special' ? 'star' : 'category'}
+                                                    </span>
+                                                </div>
+                                                <h3 className="text-on-surface font-bold text-lg mb-2">No products yet</h3>
+                                                <p className="text-on-surface-variant text-sm mb-6 max-w-[250px]">
+                                                    Start building your menu by adding your first product to this category.
+                                                </p>
+                                                <GoldenGlowButton 
+                                                    onClick={() => openAddModal(
+                                                        activeCategoryId, 
+                                                        activeCategoryId === 'special' ? "Today's Special" : products.categories.find(c => c.id === activeCategoryId)?.name
+                                                    )}
+                                                >
+                                                    <span className="material-symbols-outlined text-lg mr-1">add</span>
+                                                    Add Product
+                                                </GoldenGlowButton>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-2">
+                                                {activeItems.map(item => (
+                                                    <ProductCard 
+                                                        key={item.id} 
+                                                        item={item} 
+                                                        isSpecial={activeCategoryId === 'special'} 
+                                                        onToggleStock={toggleStock}
+                                                        onChangeCap={changeCap}
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                </AnimatePresence>
+                            );
+                        })()}
+                    </>
+                )}
             </div>
 
             {/* Modal */}
