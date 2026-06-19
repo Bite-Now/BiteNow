@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { useUser, useClerk } from '@clerk/clerk-react';
-import api from '../services/api';
+import { useUser, useClerk, useAuth as useClerkAuth } from '@clerk/clerk-react';
+import api, { setupInterceptors } from '../services/api';
 
 export const AuthContext = createContext({
   currentUser: null,
@@ -14,6 +14,7 @@ export const AuthContext = createContext({
 export const AuthProvider = ({ children }) => {
   const { isLoaded, isSignedIn } = useUser();
   const { signOut } = useClerk();
+  const { getToken } = useClerkAuth();
   const [currentUser, setCurrentUser] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +59,20 @@ export const AuthProvider = ({ children }) => {
       refreshUser();
     }
   }, [isLoaded, isSignedIn, refreshUser]);
+
+  useEffect(() => {
+    // Setup interceptors reliably using Clerk's React context hook
+    setupInterceptors(
+      async () => {
+        try {
+          return await getToken();
+        } catch (e) {
+          return null;
+        }
+      },
+      null
+    );
+  }, [getToken]);
 
   return (
     <AuthContext.Provider value={{

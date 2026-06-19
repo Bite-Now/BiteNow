@@ -8,7 +8,6 @@ import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleRedirect from './components/RoleRedirect';
 import { AuthProvider } from './context/AuthContext';
-import { setupInterceptors } from './services/api';
 
 const Canteen = React.lazy(() => import('./pages/Canteen'));
 const Cart = React.lazy(() => import('./pages/Cart'));
@@ -35,20 +34,6 @@ const StaffDashboard = React.lazy(() => import('./pages/StaffDashboard'));
 // Dummy components for missing dashboards to satisfy router
 
 function App() {
-  
-  // We cannot easily get `navigate` here since we are outside BrowserRouter or we can pass it later.
-  // Actually, setting up interceptors should be done inside a child component or with a fallback.
-  // We'll call setupInterceptors inside a useEffect or just let the interceptor use window.Clerk.
-  React.useEffect(() => {
-    // window.Clerk.session.getToken is available after load
-    const getToken = async () => {
-      if (window.Clerk && window.Clerk.session) {
-        return await window.Clerk.session.getToken();
-      }
-      return null;
-    };
-    setupInterceptors(getToken, null);
-  }, []);
 
   return (
     <AuthProvider>
