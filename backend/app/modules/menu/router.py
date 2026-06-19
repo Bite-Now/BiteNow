@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, status, File, UploadFile, Form, HTTPExce
 from sqlalchemy.ext.asyncio import AsyncSession
 from PIL import Image
 import io
+import asyncio
 
 from app.core.supabase_client import supabase
 from app.core.database import get_db
@@ -59,9 +60,12 @@ async def upload_image_or_400(file: UploadFile) -> tuple[str, str]:
 
     # Validate the actual file content, not just the client-supplied Content-Type header,
     # since that header can be spoofed.
-    try:
-        img = Image.open(io.BytesIO(file_bytes))
+    def verify_image_sync(data_bytes: bytes):
+        img = Image.open(io.BytesIO(data_bytes))
         img.verify()
+        
+    try:
+        await asyncio.to_thread(verify_image_sync, file_bytes)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid or corrupted image file.")
 
