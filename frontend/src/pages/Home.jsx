@@ -65,7 +65,6 @@ const Home = () => {
                                 
                                 <div className="absolute bottom-md left-md right-md">
                                     <h2 className="font-headline-lg text-headline-lg-mobile text-on-surface mb-xs drop-shadow-md">{canteen.name}</h2>
-                                    <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 capitalize">{canteen.slug.replace(/-/g, ' ')}</p>
                                 </div>
                             </article>
                         ))}

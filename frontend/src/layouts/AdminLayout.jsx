@@ -3,6 +3,7 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, UtensilsCrossed, Settings, LogOut, Bell, HelpCircle } from 'lucide-react';
 import { useUser, useClerk } from '@clerk/clerk-react';
 import NotificationDropdown from '../components/common/NotificationDropdown';
+import logo from '../assets/logo.png';
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -31,12 +32,10 @@ const AdminLayout = () => {
         <div>
           {/* Logo / Brand */}
           <div className="h-16 flex items-center px-6 border-b border-[#2e2e2e]">
-            <div className="w-8 h-8 rounded bg-[#ff9f43] text-black font-bold flex items-center justify-center mr-3">
-              B
-            </div>
+            <img src={logo} alt="BiteNow Logo" className="w-8 h-8 mr-3 object-cover" />
             <div>
               <h1 className="font-bold text-white text-sm">BiteNow Admin</h1>
-              <p className="text-xs text-[#888888]">Canteen Management</p>
+              <p className="text-xs text-[#888888] truncate max-w-[130px]">{user?.fullName || user?.firstName || 'Admin'}</p>
             </div>
           </div>
 
@@ -84,9 +83,6 @@ const AdminLayout = () => {
           
           <div className="flex items-center space-x-6">
             <NotificationDropdown />
-            <button className="text-[#888888] hover:text-white transition-colors duration-200 cursor-pointer">
-              <HelpCircle className="w-5 h-5" />
-            </button>
             <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden cursor-pointer">
               {user?.imageUrl ? (
                 <img src={user.imageUrl} alt="Profile" className="w-full h-full object-cover" />

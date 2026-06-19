@@ -10,8 +10,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCurrentCanteen } from '../../hooks/useCurrentCanteen';
 import { getCanteenMenu, createMenuItem, updateMenuItem, deleteMenuItem, createDailySpecial, updateDailySpecial, deleteDailySpecial } from '../../services/menuApi';
 
-// --- Add Product Modal ---
-const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting }) => {
+// --- Add/Edit Product Modal ---
+const AddProductModal = ({ isOpen, onClose, onAdd, onEdit, editItem, categoryName, isSubmitting }) => {
     if (!isOpen) return null;
 
     const [name, setName] = useState('');
@@ -20,25 +20,52 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting })
     const [image, setImage] = useState('');
     const [imageFile, setImageFile] = useState(null);
 
+    useEffect(() => {
+        if (isOpen && editItem) {
+            setName(editItem.name || '');
+            setDesc(editItem.description || '');
+            setPrice(editItem.price ? String(editItem.price) : '');
+            setImage(editItem.image_url || '');
+            setImageFile(null);
+        } else if (isOpen && !editItem) {
+            setName(''); setDesc(''); setPrice(''); setImage(''); setImageFile(null);
+        }
+    }, [isOpen, editItem]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!name || !price) return;
 
         try {
             const formData = new FormData();
-            formData.append('name', name);
-            if (desc) formData.append('description', desc);
-            formData.append('price', parseFloat(price.replace('₹', '')));
-            if (categoryName !== 'special') formData.append('category', categoryName);
-            formData.append('is_available', true);
-            
-            if (imageFile) {
-                formData.append('file', imageFile);
-            } else if (image) {
-                formData.append('image_url', image);
+            if (editItem) {
+                // Edit Mode: only append what changed
+                if (name !== editItem.name) formData.append('name', name);
+                if (desc !== (editItem.description || '')) formData.append('description', desc);
+                const parsedPrice = parseFloat(price.replace('₹', ''));
+                if (parsedPrice !== editItem.price) formData.append('price', parsedPrice);
+                
+                // Only send image if a new file was uploaded
+                if (imageFile) {
+                    formData.append('file', imageFile);
+                }
+                
+                await onEdit(editItem.id, formData);
+            } else {
+                // Add Mode
+                formData.append('name', name);
+                if (desc) formData.append('description', desc);
+                formData.append('price', parseFloat(price.replace('₹', '')));
+                if (categoryName !== 'special') formData.append('category', categoryName);
+                formData.append('is_available', true);
+                
+                if (imageFile) {
+                    formData.append('file', imageFile);
+                } else if (image) {
+                    formData.append('image_url', image);
+                }
+                await onAdd(formData);
             }
-
-            await onAdd(formData);
 
             onClose();
             setName(''); setDesc(''); setPrice(''); setImage('');
@@ -51,7 +78,7 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting })
         <GlassModal
             isOpen={isOpen}
             onClose={onClose}
-            title={`Add to ${categoryName || 'Menu'}`}
+            title={editItem ? `Edit ${editItem.name}` : `Add to ${categoryName || 'Menu'}`}
         >
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <ImageUploadBox
@@ -92,15 +119,13 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting })
                     />
                 </div>
 
-                <div className="flex gap-3 mt-4">
-                    <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border border-outline-variant/50 text-white font-bold hover:bg-white/5 transition-colors">
+                <div className="flex gap-3 pt-2">
+                    <GlassButton type="button" onClick={onClose} variant="secondary" className="flex-1">
                         Cancel
-                    </button>
-                    <div className="flex-1">
-                        <GlassButton type="submit" disabled={isSubmitting}>
-                            {isSubmitting ? 'Adding...' : 'Add Product'}
-                        </GlassButton>
-                    </div>
+                    </GlassButton>
+                    <GoldenGlowButton type="submit" disabled={isSubmitting} className="flex-1">
+                        {isSubmitting ? (editItem ? 'Saving...' : 'Adding...') : (editItem ? 'Save Changes' : 'Add Item')}
+                    </GoldenGlowButton>
                 </div>
             </form>
         </GlassModal>
@@ -108,7 +133,7 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting })
 };
 
 // --- Product Card ---
-const ProductCard = ({ item, isSpecial, onToggleStock, onDelete }) => {
+const ProductCard = ({ item, isSpecial, onToggleStock, onDelete, onEdit }) => {
     return (
         <div className="bg-surface-container rounded-xl p-2.5 flex gap-3 shadow-sm border border-outline-variant/20 mb-2 hover:border-outline-variant/40 transition-all group">
             {/* Left Side: Content */}
@@ -126,6 +151,9 @@ const ProductCard = ({ item, isSpecial, onToggleStock, onDelete }) => {
             {/* Right Side: Image & Toggle */}
             <div className="flex flex-col items-end justify-between shrink-0">
                 <div className="flex items-center gap-2 mb-2">
+                    <button onClick={() => onEdit(item)} className="text-primary/80 hover:text-primary p-1 rounded-full hover:bg-primary/10 transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">edit</span>
+                    </button>
                     <button onClick={() => onDelete(item.id)} className="text-error/80 hover:text-error p-1 rounded-full hover:bg-error/10 transition-colors">
                         <span className="material-symbols-outlined text-[16px]">delete</span>
                     </button>
@@ -164,7 +192,7 @@ const VendorProducts = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategoryId, setActiveCategoryId] = useState('special');
-    const [modalConfig, setModalConfig] = useState({ isOpen: false, categoryName: '' });
+    const [modalConfig, setModalConfig] = useState({ isOpen: false, categoryName: '', editItem: null });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -224,6 +252,23 @@ const VendorProducts = () => {
         } catch (err) {
             console.error("Failed to add product:", err);
             alert("Failed to add product.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleEditProduct = async (itemId, editPayload) => {
+        setIsSubmitting(true);
+        try {
+            if (activeCategoryId === 'special') {
+                await updateDailySpecial(itemId, editPayload);
+            } else {
+                await updateMenuItem(itemId, editPayload);
+            }
+            await fetchMenu();
+        } catch (err) {
+            console.error("Failed to update product:", err);
+            alert("Failed to update product.");
         } finally {
             setIsSubmitting(false);
         }
@@ -468,6 +513,11 @@ const VendorProducts = () => {
                                                         isSpecial={activeCategoryId === 'special'}
                                                         onToggleStock={toggleStock}
                                                         onDelete={handleDelete}
+                                                        onEdit={(item) => setModalConfig({ 
+                                                            isOpen: true, 
+                                                            categoryName: activeCategoryId === 'special' ? 'special' : activeCategoryId, 
+                                                            editItem: item 
+                                                        })}
                                                     />
                                                 ))}
                                             </div>
@@ -483,8 +533,10 @@ const VendorProducts = () => {
             <AddProductModal
                 isOpen={modalConfig.isOpen}
                 categoryName={modalConfig.categoryName}
-                onClose={() => setModalConfig({ isOpen: false, categoryName: '' })}
+                editItem={modalConfig.editItem}
+                onClose={() => setModalConfig({ isOpen: false, categoryName: '', editItem: null })}
                 onAdd={handleAddProduct}
+                onEdit={handleEditProduct}
                 isSubmitting={isSubmitting}
             />
 
