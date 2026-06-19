@@ -55,13 +55,7 @@ export const AuthProvider = ({ children }) => {
   }, [isSignedIn]);
 
   useEffect(() => {
-    if (isLoaded) {
-      refreshUser();
-    }
-  }, [isLoaded, isSignedIn, refreshUser]);
-
-  useEffect(() => {
-    // Setup interceptors reliably using Clerk's React context hook
+    // 1. Setup interceptors synchronously first to prevent race conditions
     setupInterceptors(
       async () => {
         try {
@@ -72,7 +66,12 @@ export const AuthProvider = ({ children }) => {
       },
       null
     );
-  }, [getToken]);
+
+    // 2. Only after interceptors are ready, fetch the user profile
+    if (isLoaded) {
+      refreshUser();
+    }
+  }, [isLoaded, isSignedIn, refreshUser, getToken]);
 
   return (
     <AuthContext.Provider value={{
