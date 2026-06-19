@@ -82,6 +82,9 @@ const Canteen = () => {
     return (
         <div className="font-body-md relative flex flex-col pb-[100px] min-h-screen">
             {/* Top Navigation */}
+
+            {/* Main Content Canvas */}
+            <main className="px-container-margin flex flex-col gap-lg pt-4 pb-12">
             <header className="sticky top-0 z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-md shadow-lg shadow-primary/5 flex justify-between items-center px-container-margin py-md border-b border-outline-variant/10">
                 <button 
                     onClick={() => navigate('/home')}
@@ -94,9 +97,6 @@ const Canteen = () => {
                 </h1>
                 <div className="w-10"></div>
             </header>
-
-            {/* Main Content Canvas */}
-            <main className="px-container-margin flex flex-col gap-lg pt-4 pb-12">
                 
                 {/* Specials Carousel */}
                 {specials && specials.length > 0 && (
