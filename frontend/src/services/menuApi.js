@@ -63,7 +63,9 @@ export const createMenuItem = async (canteenId, payload) => {
  */
 export const updateMenuItem = async (itemId, payload) => {
   try {
-    const response = await api.patch(`/owner/menu/${itemId}`, payload);
+    const response = await api.patch(`/owner/menu/${itemId}`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   } catch (error) {
     console.error(`Error updating menu item ${itemId}:`, error);
@@ -118,7 +120,9 @@ export const createDailySpecial = async (canteenId, payload) => {
  */
 export const updateDailySpecial = async (itemId, payload) => {
   try {
-    const response = await api.patch(`/owner/specials/${itemId}`, payload);
+    const response = await api.patch(`/owner/specials/${itemId}`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   } catch (error) {
     console.error(`Error updating daily special ${itemId}:`, error);

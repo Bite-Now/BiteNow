@@ -127,15 +127,52 @@ async def create_menu_item(
 @owner_router.patch("/menu/{item_id}", response_model=MenuItemResponse)
 async def update_menu_item(
     item_id: UUID,
-    data: MenuItemUpdate,
+    name: Optional[str] = Form(None),
+    price: Optional[float] = Form(None),
+    description: Optional[str] = Form(None),
+    category: Optional[str] = Form(None),
+    is_available: Optional[bool] = Form(None),
+    image_url: Optional[str] = Form(None),
+    file: UploadFile = File(None),
     service: MenuService = Depends(get_menu_service),
     current_user: User = Depends(get_current_user)
 ):
     """Update a menu item."""
-    # NOTE: Confirm MenuService.update_menu_item verifies the item belongs to a
-    # canteen owned/managed by current_user before updating (and returns 403/404
-    # otherwise). Without that check this is an IDOR vulnerability.
-    return await service.update_menu_item(item_id, data, current_user)
+    # Fetch existing item to get the old image URL
+    item = await service.repository.get_menu_item_by_id(item_id)
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found")
+        
+    old_image_url = item.image_url
+    new_image_url = image_url
+    new_filename = None
+
+    if file:
+        new_image_url, new_filename = await upload_image_or_400(file)
+
+    update_dict = {}
+    if name is not None: update_dict['name'] = name
+    if price is not None: update_dict['price'] = price
+    if description is not None: update_dict['description'] = description
+    if category is not None: update_dict['category'] = category
+    if is_available is not None: update_dict['is_available'] = is_available
+    if new_image_url is not None: update_dict['image_url'] = new_image_url
+
+    data = MenuItemUpdate(**update_dict)
+
+    try:
+        updated_item = await service.update_menu_item(item_id, data, current_user)
+    except Exception:
+        # Rollback: delete the newly uploaded image if database update fails
+        await cleanup_orphaned_image(new_filename)
+        raise
+
+    # If DB update succeeded and we uploaded a new file, delete the old file
+    if file and old_image_url and "supabase.co" in old_image_url:
+        old_filename = old_image_url.split('/')[-1]
+        await cleanup_orphaned_image(old_filename)
+
+    return updated_item
 
 
 @owner_router.delete("/menu/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -192,13 +229,50 @@ async def create_daily_special(
 @owner_router.patch("/specials/{special_id}", response_model=DailySpecialResponse)
 async def update_daily_special(
     special_id: UUID,
-    data: DailySpecialUpdate,
+    name: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    price: Optional[float] = Form(None),
+    is_available: Optional[bool] = Form(None),
+    image_url: Optional[str] = Form(None),
+    file: UploadFile = File(None),
     service: MenuService = Depends(get_menu_service),
     current_user: User = Depends(get_current_user)
 ):
     """Update a daily special."""
-    # NOTE: Same ownership check requirement as update_menu_item above.
-    return await service.update_daily_special(special_id, data, current_user)
+    # Fetch existing special to get the old image URL
+    special = await service.repository.get_daily_special_by_id(special_id)
+    if not special:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Daily special not found")
+        
+    old_image_url = special.image_url
+    new_image_url = image_url
+    new_filename = None
+
+    if file:
+        new_image_url, new_filename = await upload_image_or_400(file)
+
+    update_dict = {}
+    if name is not None: update_dict['name'] = name
+    if description is not None: update_dict['description'] = description
+    if price is not None: update_dict['price'] = price
+    if is_available is not None: update_dict['is_available'] = is_available
+    if new_image_url is not None: update_dict['image_url'] = new_image_url
+
+    data = DailySpecialUpdate(**update_dict)
+
+    try:
+        updated_special = await service.update_daily_special(special_id, data, current_user)
+    except Exception:
+        # Rollback: delete the newly uploaded image if database update fails
+        await cleanup_orphaned_image(new_filename)
+        raise
+
+    # If DB update succeeded and we uploaded a new file, delete the old file
+    if file and old_image_url and "supabase.co" in old_image_url:
+        old_filename = old_image_url.split('/')[-1]
+        await cleanup_orphaned_image(old_filename)
+
+    return updated_special
 
 
 @owner_router.delete("/specials/{special_id}", status_code=status.HTTP_204_NO_CONTENT)
