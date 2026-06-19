@@ -35,7 +35,7 @@ const AdminLayout = () => {
             <img src={logo} alt="BiteNow Logo" className="w-8 h-8 mr-3 object-cover" />
             <div>
               <h1 className="font-bold text-white text-sm">BiteNow Admin</h1>
-              <p className="text-xs text-[#888888] truncate max-w-[130px]">{user?.fullName || user?.firstName || 'Admin'}</p>
+              <p className="text-xs text-[#888888] truncate max-w-[130px]">{user?.firstName || 'Admin'}</p>
             </div>
           </div>
 

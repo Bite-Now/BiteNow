@@ -10,20 +10,25 @@ class CanteenAggregateSchema(BaseModel):
     owner_name: Optional[str]
     total_menu_items: int
 
-class AdminSettingsBase(BaseModel):
-    notification_matrix: Dict[str, Any]
+class AdminSettingsUpdate(BaseModel):
+    admin_name: Optional[str] = None
+    email_address: Optional[str] = None
+    notify_vendor_email: Optional[bool] = None
+    notify_vendor_sms: Optional[bool] = None
+    notify_menu_email: Optional[bool] = None
+    notify_menu_sms: Optional[bool] = None
+    notify_system_email: Optional[bool] = None
+    notify_system_sms: Optional[bool] = None
 
-class AdminSettingsUpdate(AdminSettingsBase):
-    pass
-
-class AdminSettingsSchema(AdminSettingsBase):
-    id: UUID
-    user_id: UUID
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
+class AdminSettingsSchema(BaseModel):
+    admin_name: str
+    email_address: str
+    notify_vendor_email: bool
+    notify_vendor_sms: bool
+    notify_menu_email: bool
+    notify_menu_sms: bool
+    notify_system_email: bool
+    notify_system_sms: bool
 
 class BulkUploadPreviewItem(BaseModel):
     name: str

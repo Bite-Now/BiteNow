@@ -33,8 +33,8 @@ const Settings = () => {
         });
         const data = response.data;
         setFormData({
-          adminName: user?.firstName || '',
-          emailAddress: user?.emailAddresses?.[0]?.emailAddress || '',
+          adminName: data.admin_name || user?.firstName || '',
+          emailAddress: data.email_address || user?.emailAddresses?.[0]?.emailAddress || '',
         });
         setNotifications({
           vendorRequests: { 

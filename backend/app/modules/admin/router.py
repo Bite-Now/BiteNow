@@ -395,7 +395,18 @@ async def get_admin_settings(
         await db.commit()
         await db.refresh(settings)
         
-    return settings
+    matrix = settings.notification_matrix or {}
+    
+    return {
+        "admin_name": admin.full_name or "",
+        "email_address": admin.email or "",
+        "notify_vendor_email": matrix.get("notify_vendor_email", True),
+        "notify_vendor_sms": matrix.get("notify_vendor_sms", False),
+        "notify_menu_email": matrix.get("notify_menu_email", True),
+        "notify_menu_sms": matrix.get("notify_menu_sms", False),
+        "notify_system_email": matrix.get("notify_system_email", True),
+        "notify_system_sms": matrix.get("notify_system_sms", False)
+    }
 
 @router.patch("/settings", response_model=AdminSettingsSchema)
 async def update_admin_settings(
@@ -403,15 +414,41 @@ async def update_admin_settings(
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
+    # Update User table immediately
+    if payload.admin_name is not None:
+        admin.full_name = payload.admin_name
+    if payload.email_address is not None:
+        admin.email = payload.email_address
+
     result = await db.execute(select(AdminSettings).where(AdminSettings.user_id == admin.id))
     settings = result.scalars().first()
     
     if not settings:
-        settings = AdminSettings(user_id=admin.id)
+        settings = AdminSettings(user_id=admin.id, notification_matrix={})
         db.add(settings)
         
-    settings.notification_matrix = payload.notification_matrix
+    matrix = settings.notification_matrix or {}
+    if payload.notify_vendor_email is not None: matrix["notify_vendor_email"] = payload.notify_vendor_email
+    if payload.notify_vendor_sms is not None: matrix["notify_vendor_sms"] = payload.notify_vendor_sms
+    if payload.notify_menu_email is not None: matrix["notify_menu_email"] = payload.notify_menu_email
+    if payload.notify_menu_sms is not None: matrix["notify_menu_sms"] = payload.notify_menu_sms
+    if payload.notify_system_email is not None: matrix["notify_system_email"] = payload.notify_system_email
+    if payload.notify_system_sms is not None: matrix["notify_system_sms"] = payload.notify_system_sms
+    
+    # Needs to be re-assigned for sqlalchemy to detect JSON change
+    settings.notification_matrix = dict(matrix)
+    
     await db.commit()
+    await db.refresh(admin)
     await db.refresh(settings)
     
-    return settings
+    return {
+        "admin_name": admin.full_name or "",
+        "email_address": admin.email or "",
+        "notify_vendor_email": matrix.get("notify_vendor_email", True),
+        "notify_vendor_sms": matrix.get("notify_vendor_sms", False),
+        "notify_menu_email": matrix.get("notify_menu_email", True),
+        "notify_menu_sms": matrix.get("notify_menu_sms", False),
+        "notify_system_email": matrix.get("notify_system_email", True),
+        "notify_system_sms": matrix.get("notify_system_sms", False)
+    }
