@@ -61,7 +61,7 @@ const Cart = () => {
                                 <div key={item.id} className="flex justify-between items-center bg-surface-container-low rounded-xl p-md border border-surface-variant">
                                     <div className="flex gap-4 items-center">
                                         <div className="w-16 h-16 rounded-lg bg-surface-container-highest overflow-hidden">
-                                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                            <img src={item.image} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                         </div>
                                         <div>
                                             <div className="font-label-md text-label-md text-on-surface mb-1">{item.name}</div>

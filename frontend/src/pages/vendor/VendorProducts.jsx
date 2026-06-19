@@ -133,7 +133,7 @@ const AddProductModal = ({ isOpen, onClose, onAdd, onEdit, editItem, categoryNam
 };
 
 // --- Product Card ---
-const ProductCard = ({ item, isSpecial, onToggleStock, onDelete, onEdit }) => {
+const ProductCard = React.memo(({ item, isSpecial, activeCategoryId, onToggleStock, onDelete, onEdit }) => {
     return (
         <div className="bg-surface-container rounded-xl p-2.5 flex gap-3 shadow-sm border border-outline-variant/20 mb-2 hover:border-outline-variant/40 transition-all group">
             {/* Left Side: Content */}
@@ -151,7 +151,7 @@ const ProductCard = ({ item, isSpecial, onToggleStock, onDelete, onEdit }) => {
             {/* Right Side: Image & Toggle */}
             <div className="flex flex-col items-end justify-between shrink-0">
                 <div className="flex items-center gap-2 mb-2">
-                    <button onClick={() => onEdit(item)} className="text-primary/80 hover:text-primary p-1 rounded-full hover:bg-primary/10 transition-colors">
+                    <button onClick={() => onEdit(item, activeCategoryId)} className="text-primary/80 hover:text-primary p-1 rounded-full hover:bg-primary/10 transition-colors">
                         <span className="material-symbols-outlined text-[16px]">edit</span>
                     </button>
                     <button onClick={() => onDelete(item.id)} className="text-error/80 hover:text-error p-1 rounded-full hover:bg-error/10 transition-colors">
@@ -160,7 +160,7 @@ const ProductCard = ({ item, isSpecial, onToggleStock, onDelete, onEdit }) => {
                 </div>
                 <div className="w-[68px] h-[68px] rounded-lg overflow-hidden bg-surface shadow-sm border border-outline-variant/10">
                     {item.image_url ? (
-                        <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img src={item.image_url} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
                             <span className="material-symbols-outlined text-2xl">restaurant</span>
@@ -184,7 +184,7 @@ const ProductCard = ({ item, isSpecial, onToggleStock, onDelete, onEdit }) => {
             </div>
         </div>
     );
-};
+});
 
 const VendorProducts = () => {
     const { canteenId, isLoaded } = useCurrentCanteen();
@@ -239,6 +239,14 @@ const VendorProducts = () => {
             });
         }
     }, [activeCategoryId, products.categories.length]);
+
+    const handleEditClick = React.useCallback((item, catId) => {
+        setModalConfig({ 
+            isOpen: true, 
+            categoryName: catId === 'special' ? 'special' : catId, 
+            editItem: item 
+        });
+    }, []);
 
     const handleAddProduct = async (newItemPayload) => {
         setIsSubmitting(true);
@@ -463,16 +471,8 @@ const VendorProducts = () => {
                             const isEmpty = filteredItems.length === 0;
 
                             return (
-                                <AnimatePresence mode="wait">
-                                    <motion.div
-                                        key={activeCategoryId}
-                                        initial={{ opacity: 0, y: 12, scale: 0.98 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                                        transition={{ duration: 0.25, ease: "easeOut" }}
-                                        className="flex flex-col flex-1 min-h-0"
-                                    >
-                                        {!isEmpty && (
+                                <div className="flex flex-col flex-1 min-h-0 animate-in fade-in duration-300">
+                                    {!isEmpty && (
                                             <GoldenGlowButton
                                                 onClick={() => setModalConfig({
                                                     isOpen: true,
@@ -511,19 +511,15 @@ const VendorProducts = () => {
                                                         key={item.id}
                                                         item={item}
                                                         isSpecial={activeCategoryId === 'special'}
+                                                        activeCategoryId={activeCategoryId}
                                                         onToggleStock={toggleStock}
                                                         onDelete={handleDelete}
-                                                        onEdit={(item) => setModalConfig({ 
-                                                            isOpen: true, 
-                                                            categoryName: activeCategoryId === 'special' ? 'special' : activeCategoryId, 
-                                                            editItem: item 
-                                                        })}
+                                                        onEdit={handleEditClick}
                                                     />
                                                 ))}
                                             </div>
                                         )}
-                                    </motion.div>
-                                </AnimatePresence>
+                                </div>
                             );
                         })()}
                     </>

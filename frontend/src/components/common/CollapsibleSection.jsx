@@ -12,7 +12,7 @@ const CollapsibleSection = ({
     const [isOpen, setIsOpen] = useState(defaultOpen);
 
     return (
-        <div className={`bg-surface-container-low dark:bg-surface-container-low backdrop-blur-xl border border-outline-variant/30 rounded-3xl overflow-hidden shadow-sm ${className}`}>
+        <div className={`bg-surface-container-low dark:bg-surface-container-low border border-outline-variant/30 rounded-3xl overflow-hidden shadow-sm ${className}`}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex justify-between items-center p-5 cursor-pointer hover:bg-surface-container transition-colors active:scale-[0.99]"

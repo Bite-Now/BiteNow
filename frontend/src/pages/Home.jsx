@@ -48,10 +48,13 @@ const Home = () => {
                     <section className="flex flex-col gap-md">
                         {canteens.map((canteen) => (
                             <article key={canteen.id} onClick={() => navigate(`/canteen/${canteen.id}`)} className="relative w-full h-[180px] rounded-3xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.2)] group cursor-pointer active:scale-[0.98] transition-transform duration-300">
-                                <div 
-                                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" 
-                                    style={{ backgroundImage: `url(${canteen.image_url || DEFAULT_IMAGE})` }}
-                                ></div>
+                                <img 
+                                    src={canteen.image_url || DEFAULT_IMAGE} 
+                                    alt={canteen.name}
+                                    loading="lazy"
+                                    decoding="async"
+                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                                />
                                 <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/90 via-surface/40 to-transparent"></div>
                                 
                                 <div className="absolute top-sm right-sm flex gap-xs">
