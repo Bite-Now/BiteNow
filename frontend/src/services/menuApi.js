@@ -43,7 +43,9 @@ export const getCanteenMenu = async (canteenId) => {
  */
 export const createMenuItem = async (canteenId, payload) => {
   try {
-    const response = await api.post(`/owner/canteens/${canteenId}/menu`, payload);
+    const response = await api.post(`/owner/canteens/${canteenId}/menu`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   } catch (error) {
     console.error(`Error creating menu item for canteen ${canteenId}:`, error);
@@ -61,7 +63,9 @@ export const createMenuItem = async (canteenId, payload) => {
  */
 export const updateMenuItem = async (itemId, payload) => {
   try {
-    const response = await api.patch(`/owner/menu/${itemId}`, payload);
+    const response = await api.patch(`/owner/menu/${itemId}`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   } catch (error) {
     console.error(`Error updating menu item ${itemId}:`, error);
@@ -96,7 +100,9 @@ export const deleteMenuItem = async (itemId) => {
  */
 export const createDailySpecial = async (canteenId, payload) => {
   try {
-    const response = await api.post(`/owner/canteens/${canteenId}/specials`, payload);
+    const response = await api.post(`/owner/canteens/${canteenId}/specials`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   } catch (error) {
     console.error(`Error creating daily special for canteen ${canteenId}:`, error);
@@ -114,7 +120,9 @@ export const createDailySpecial = async (canteenId, payload) => {
  */
 export const updateDailySpecial = async (itemId, payload) => {
   try {
-    const response = await api.patch(`/owner/specials/${itemId}`, payload);
+    const response = await api.patch(`/owner/specials/${itemId}`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   } catch (error) {
     console.error(`Error updating daily special ${itemId}:`, error);

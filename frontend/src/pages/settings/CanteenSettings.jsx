@@ -46,7 +46,9 @@ const CanteenSettings = () => {
                 formData.append('image_url', imageUrl);
             }
 
-            const response = await api.patch('/owner/canteen', formData);
+            const response = await api.patch('/owner/canteen', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             
             // If the server returns a new image_url or we want to reset file state
             setImageFile(null);
