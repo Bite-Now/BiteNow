@@ -14,6 +14,7 @@ from app.modules.auth.models import User, StaffAssignment, Canteen
 from app.core.dependencies import require_owner
 from app.core.clerk import create_user, clerk_client
 from app.core.supabase_client import supabase
+from app.core.storage import upload_image_or_400, cleanup_orphaned_image
 
 logger = logging.getLogger(__name__)
 
@@ -70,26 +71,7 @@ async def update_canteen(
     new_filename = None
 
     if file:
-        if file.content_type not in VALID_IMAGE_CONTENT_TYPES:
-            raise HTTPException(status_code=400, detail="Invalid file type. Only JPG, PNG, and WebP are allowed.")
-
-        ext = mimetypes.guess_extension(file.content_type)
-        if not ext:
-            ext = ".jpg"
-
-        new_filename = f"{uuid.uuid4()}{ext}"
-        file_bytes = await file.read()
-
-        try:
-            supabase.storage.from_("BiteNowImage").upload(
-                file=file_bytes,
-                path=new_filename,
-                file_options={"content-type": file.content_type}
-            )
-            new_image_url = supabase.storage.from_("BiteNowImage").get_public_url(new_filename)
-        except Exception as e:
-            logger.error(f"Supabase upload error: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Failed to upload image to storage")
+        new_image_url, new_filename = await upload_image_or_400(file)
 
     if name is not None:
         canteen.name = name
@@ -106,20 +88,14 @@ async def update_canteen(
         await db.rollback()
         # If DB update fails, delete the new image to prevent orphans
         if file and new_filename:
-            try:
-                supabase.storage.from_("BiteNowImage").remove([new_filename])
-            except Exception as delete_err:
-                logger.error(f"Failed to clean up orphaned image: {delete_err}", exc_info=True)
+            await cleanup_orphaned_image(new_filename)
         logger.error(f"Database update failed for canteen {owner.canteen_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Database update failed")
 
     # If DB update succeeded and we uploaded a new file, delete the old file
     if file and old_image_url and "supabase.co" in old_image_url:
         old_filename = old_image_url.split('/')[-1]
-        try:
-            supabase.storage.from_("BiteNowImage").remove([old_filename])
-        except Exception as delete_err:
-            logger.error(f"Failed to delete old image {old_filename}: {delete_err}", exc_info=True)
+        await cleanup_orphaned_image(old_filename)
 
     return {"message": "Canteen settings updated successfully"}
 
@@ -342,9 +318,9 @@ async def remove_staff(
                 pass
             else:
                 # For active user, we should update their public metadata to remove role
-                clerk_client.users.update(
+                clerk_client.users.update_metadata(
                     user_id=clerk_user_id,
-                    request={"public_metadata": {}}
+                    public_metadata={}
                 )
         except Exception as e:
             logger.error(f"Failed to update clerk user {clerk_user_id}: {e}", exc_info=True)
