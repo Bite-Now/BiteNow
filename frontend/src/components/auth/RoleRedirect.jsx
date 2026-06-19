@@ -9,31 +9,26 @@ export function RoleRedirect() {
   useEffect(() => {
     // 1. Wait for Clerk to initialize
     if (isAuthLoading) {
-      console.log("[RoleRedirect] Waiting for Clerk...");
       return;
     }
 
     // 2. If Clerk is loaded and user is NOT signed in, redirect to login
     if (!isAuthenticated) {
-      console.log("[RoleRedirect] Not authenticated. Redirecting to login.");
       navigate('/login', { replace: true });
       return;
     }
 
     // 3. User is signed in. Wait for backend profile sync to finish.
     if (isProfileLoading) {
-      console.log("[RoleRedirect] Waiting for Profile Sync...");
       return;
     }
 
     // 4. Profile sync finished. Did it succeed?
     if (!isProfileLoaded) {
-      console.log("[RoleRedirect] Profile load failed. Halting.");
       return;
     }
 
     // 5. Success! We have the role, perform the redirect.
-    console.log(`[RoleRedirect] Authenticated with role: ${role}. Redirecting...`);
     if (role === 'STUDENT') {
       navigate('/home', { replace: true });
     } else if (role === 'OWNER') {

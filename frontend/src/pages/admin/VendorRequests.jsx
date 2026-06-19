@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { useAuth } from '@clerk/clerk-react';
 import { Search, X, CheckCircle, XCircle, FileText, Phone, Mail, Building, MapPin } from 'lucide-react';
 
@@ -19,7 +19,7 @@ const VendorRequests = () => {
     setIsLoading(true);
     try {
       const token = await getToken();
-      const response = await axios.get('http://localhost:8000/admin/vendor-applications', {
+      const response = await api.get('/admin/vendor-applications', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setApplications(response.data);
@@ -45,7 +45,7 @@ const VendorRequests = () => {
     setIsProcessing(true);
     try {
       const token = await getToken();
-      await axios.patch(`http://localhost:8000/admin/vendor-applications/${id}/approve`, {}, {
+      await api.patch(`/admin/vendor-applications/${id}/approve`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       showToast('Vendor approved successfully!');
@@ -63,7 +63,7 @@ const VendorRequests = () => {
     setIsProcessing(true);
     try {
       const token = await getToken();
-      await axios.patch(`http://localhost:8000/admin/vendor-applications/${id}/reject`, {}, {
+      await api.patch(`/admin/vendor-applications/${id}/reject`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       showToast('Vendor application rejected.');

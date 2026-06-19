@@ -6,7 +6,6 @@ export function ProtectedRoute({ allowedRoles, children }) {
   const { role, isAuthenticated, isAuthLoading, isProfileLoading, isProfileLoaded } = useAuth();
 
   if (isAuthLoading) {
-    console.log("[ProtectedRoute] Waiting for Clerk initialization...");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -16,13 +15,11 @@ export function ProtectedRoute({ allowedRoles, children }) {
 
   // Once Auth is loaded, if they aren't authenticated in Clerk, boot them out immediately.
   if (!isAuthenticated) {
-    console.log("[ProtectedRoute] Unauthenticated. Redirecting to login.");
     return <Navigate to="/login" replace />;
   }
 
   // They are authenticated in Clerk! Now we wait for the backend profile.
   if (isProfileLoading) {
-    console.log("[ProtectedRoute] Waiting for backend profile sync...");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -35,7 +32,6 @@ export function ProtectedRoute({ allowedRoles, children }) {
 
   // Profile finished loading. Did it succeed?
   if (!isProfileLoaded) {
-    console.log("[ProtectedRoute] Profile load failed. Halting.");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-error">
         <p>There was an error loading your profile data. Please refresh the page.</p>
@@ -44,7 +40,6 @@ export function ProtectedRoute({ allowedRoles, children }) {
   }
 
   if (!role || !allowedRoles.includes(role)) {
-    console.log(`[ProtectedRoute] Role mismatch (Have: ${role}, Need: ${allowedRoles}). Redirecting to unauthorized.`);
     return <Navigate to="/unauthorized" replace />;
   }
 

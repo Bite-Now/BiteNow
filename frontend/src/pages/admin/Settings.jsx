@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { useUser, useAuth } from '@clerk/clerk-react';
 
 const Settings = () => {
@@ -28,7 +28,7 @@ const Settings = () => {
     const fetchSettings = async () => {
       try {
         const token = await getToken();
-        const response = await axios.get('http://localhost:8000/admin/settings', {
+        const response = await api.get('/admin/settings', {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = response.data;
@@ -78,7 +78,7 @@ const Settings = () => {
       
       const token = await getToken();
       try {
-        await axios.patch('http://localhost:8000/admin/settings', {
+        await api.patch('/admin/settings', {
           admin_name: formData.adminName,
           email_address: formData.emailAddress,
           notify_vendor_email: notifications.vendorRequests.email,

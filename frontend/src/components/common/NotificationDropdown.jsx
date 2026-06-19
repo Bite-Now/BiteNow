@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Check, X } from 'lucide-react';
 import { useAuth } from '@clerk/clerk-react';
-import axios from 'axios';
+import api from '../../services/api';
 
 const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,7 +15,7 @@ const NotificationDropdown = () => {
       const token = await getToken();
       if (!token) return;
       
-      const response = await axios.get('http://localhost:8000/notifications', {
+      const response = await api.get('/notifications', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -60,7 +60,7 @@ const NotificationDropdown = () => {
       // The backend has a DELETE /notifications/bulk endpoint. Let's use that to clear them.
       // Alternatively we can use PATCH /{id}/read. 
       // The current backend route is: DELETE /notifications/bulk (takes list of UUIDs)
-      await axios.delete('http://localhost:8000/notifications/bulk', {
+      await api.delete('/notifications/bulk', {
         headers: { Authorization: `Bearer ${token}` },
         data: unreadIds
       });
