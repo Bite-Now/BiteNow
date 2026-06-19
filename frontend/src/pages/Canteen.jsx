@@ -18,6 +18,11 @@ const Canteen = () => {
     // Budget Mode state
     const [budgetMode, setBudgetMode] = useState(false);
     const currentBalance = useWalletStore((state) => state.remainingBalance);
+    
+    const today = new Date();
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const remainingDays = lastDay - today.getDate() + 1;
+    const dailyAllowance = currentBalance / remainingDays;
 
     useEffect(() => {
         const fetchCanteenMenu = async () => {
@@ -106,32 +111,41 @@ const Canteen = () => {
                             <h2 className="font-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface text-headline-md-mobile">Today's Specials</h2>
                         </div>
                         <div className="flex overflow-x-auto gap-md no-scrollbar pb-sm snap-x">
-                            {specials.map(special => (
-                                <div key={special.id} className={`min-w-[280px] w-[280px] md:w-[320px] bg-surface-container-low rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.2)] border border-surface-container-highest snap-start relative flex-shrink-0 group ${!special.is_available ? 'opacity-60 grayscale-[50%]' : ''}`}>
-                                    <div className="h-[160px] bg-surface-variant relative overflow-hidden rounded-t-[12px] m-xs">
-                                        <img src={special.image_url || DEFAULT_IMAGE} alt={special.name} className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!special.is_available ? 'grayscale' : ''}`} />
-                                    </div>
-                                    <div className="p-md flex flex-col gap-xs">
-                                        <div className="flex justify-between items-start">
-                                            <h3 className="font-label-md text-label-md text-on-surface">{special.name}</h3>
-                                            <span className={`font-label-md text-label-md ${!special.is_available ? 'text-on-surface-variant line-through' : 'text-primary-container'}`}>₹{special.price}</span>
+                            {specials.map(special => {
+                                const isOverBudget = budgetMode && special.price >= dailyAllowance;
+                                const isUnavailable = !special.is_available || isOverBudget || !canteen.is_open;
+                                
+                                return (
+                                    <div key={special.id} className={`min-w-[280px] w-[280px] md:w-[320px] bg-surface-container-low rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.2)] border border-surface-container-highest snap-start relative flex-shrink-0 group ${isUnavailable ? 'opacity-60 grayscale-[50%]' : ''}`}>
+                                        <div className="h-[160px] bg-surface-variant relative overflow-hidden rounded-t-[12px] m-xs">
+                                            <img src={special.image_url || DEFAULT_IMAGE} alt={special.name} className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${isUnavailable ? 'grayscale' : ''}`} />
                                         </div>
-                                        <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">{special.description}</p>
-                                        
-                                        {!special.is_available ? (
-                                            <div className="mt-sm w-full py-2 flex justify-center items-center">
-                                                <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Sold Out</span>
+                                        <div className="p-md flex flex-col gap-xs">
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="font-label-md text-label-md text-on-surface">{special.name}</h3>
+                                                <span className={`font-label-md text-label-md ${isUnavailable ? 'text-on-surface-variant line-through' : 'text-primary-container'}`}>₹{special.price}</span>
                                             </div>
-                                        ) : !canteen.is_open ? (
-                                            <div className="mt-sm w-full py-2 flex justify-center items-center">
-                                                <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Closed</span>
-                                            </div>
-                                        ) : (
-                                            <SpecialAddToCartButton special={special} canteenId={id} />
-                                        )}
+                                            <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">{special.description}</p>
+                                            
+                                            {!special.is_available ? (
+                                                <div className="mt-sm w-full py-2 flex justify-center items-center">
+                                                    <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Sold Out</span>
+                                                </div>
+                                            ) : isOverBudget ? (
+                                                <div className="mt-sm w-full py-2 flex justify-center items-center">
+                                                    <span className="px-3 py-1 rounded text-[12px] font-bold bg-red-900/50 text-red-400 border border-red-900/50 uppercase tracking-wider">Over Budget</span>
+                                                </div>
+                                            ) : !canteen.is_open ? (
+                                                <div className="mt-sm w-full py-2 flex justify-center items-center">
+                                                    <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Closed</span>
+                                                </div>
+                                            ) : (
+                                                <SpecialAddToCartButton special={special} canteenId={id} />
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </section>
                 )}
@@ -145,7 +159,7 @@ const Canteen = () => {
                                 <span className="text-slate-300 font-label-md">Budget Mode</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                {budgetMode && <span className="text-green-400 font-label-md">₹{currentBalance} left</span>}
+                                {budgetMode && <span className="text-green-400 font-label-md">₹{Math.floor(dailyAllowance)}/day</span>}
                                 <button 
                                     onClick={() => setBudgetMode(!budgetMode)}
                                     className={`w-12 h-6 rounded-full p-1 transition-colors relative flex items-center ${budgetMode ? 'bg-green-500' : 'bg-slate-700'}`}
@@ -204,8 +218,8 @@ const SpecialAddToCartButton = ({ special, canteenId }) => {
     );
 };
 
-const MenuItem = React.memo(({ item, canteenId, budgetMode, currentBalance, canteenOpen }) => {
-    const isOverBudget = budgetMode && item.price > currentBalance;
+const MenuItem = React.memo(({ item, canteenId, budgetMode, dailyAllowance, canteenOpen }) => {
+    const isOverBudget = budgetMode && item.price >= dailyAllowance;
     const isUnavailable = !item.is_available || isOverBudget || !canteenOpen;
 
     const quantity = useCartStore((state) => state.items.find(i => i.id === item.id)?.quantity || 0);
