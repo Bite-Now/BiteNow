@@ -22,12 +22,15 @@ origins = [
     "http://localhost:3000", 
     "http://127.0.0.1:3000", 
     "http://localhost:5173", 
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:5173",
+    "https://bite-now-alpha.vercel.app"
 ]
 
 frontend_url = os.getenv("FRONTEND_URL")
 if frontend_url:
-    origins.append(frontend_url)
+    clean_url = frontend_url.strip().rstrip("/")
+    if clean_url and clean_url not in origins:
+        origins.append(clean_url)
 
 app.add_middleware(
     CORSMiddleware,
