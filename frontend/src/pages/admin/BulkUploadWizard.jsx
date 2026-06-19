@@ -121,7 +121,18 @@ const BulkUploadWizard = ({ canteen, onClose, onSuccess }) => {
       let progress = 0;
       for (const item of validItemsToUpload) {
         // Create each menu item
-        await api.post(`/owner/canteens/${canteen.id}/menu`, item);
+        const formData = new FormData();
+        formData.append('name', item.name);
+        formData.append('price', item.price);
+        if (item.description) formData.append('description', item.description);
+        if (item.category) formData.append('category', item.category);
+        if (item.image_url) formData.append('image_url', item.image_url);
+        formData.append('is_available', item.is_available);
+        formData.append('is_veg', item.is_veg);
+
+        await api.post(`/owner/canteens/${canteen.id}/menu`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
         progress++;
       }
       
