@@ -4,7 +4,7 @@ const GlassInput = ({ label, required, className = '', ...props }) => {
   return (
     <div className={`relative ${className}`}>
       {/* Background layer */}
-      <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-xl border border-white/10 pointer-events-none transition-colors peer-focus:border-white/30"></div>
+      <div className="absolute inset-0 bg-white/[0.06] rounded-xl border border-white/10 pointer-events-none transition-colors peer-focus:border-white/30"></div>
       
       <div className="relative flex items-center px-4 py-3">
         <input

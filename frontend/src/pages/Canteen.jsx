@@ -15,15 +15,14 @@ const Canteen = () => {
     const [error, setError] = useState(null);
     const [activeCategory, setActiveCategory] = useState('');
     
-    const cartItems = useCartStore((state) => state.items);
-    const addToCart = useCartStore((state) => state.addToCart);
-    const removeFromCart = useCartStore((state) => state.removeFromCart);
-    const getTotalItems = useCartStore((state) => state.getTotalItems);
-    const getTotalPrice = useCartStore((state) => state.getTotalPrice);
-    
     // Budget Mode state
     const [budgetMode, setBudgetMode] = useState(false);
     const currentBalance = useWalletStore((state) => state.remainingBalance);
+    
+    const today = new Date();
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const remainingDays = lastDay - today.getDate() + 1;
+    const dailyAllowance = currentBalance / remainingDays;
 
     useEffect(() => {
         const fetchCanteenMenu = async () => {
@@ -112,34 +111,41 @@ const Canteen = () => {
                             <h2 className="font-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface text-headline-md-mobile">Today's Specials</h2>
                         </div>
                         <div className="flex overflow-x-auto gap-md no-scrollbar pb-sm snap-x">
-                            {specials.map(special => (
-                                <div key={special.id} className={`min-w-[280px] w-[280px] md:w-[320px] bg-surface-container-low rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.2)] border border-surface-container-highest snap-start relative flex-shrink-0 group ${!special.is_available ? 'opacity-60 grayscale-[50%]' : ''}`}>
-                                    <div className="h-[160px] bg-surface-variant relative overflow-hidden rounded-t-[12px] m-xs">
-                                        <img src={special.image_url || DEFAULT_IMAGE} alt={special.name} className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!special.is_available ? 'grayscale' : ''}`} />
-                                    </div>
-                                    <div className="p-md flex flex-col gap-xs">
-                                        <div className="flex justify-between items-start">
-                                            <h3 className="font-label-md text-label-md text-on-surface">{special.name}</h3>
-                                            <span className={`font-label-md text-label-md ${!special.is_available ? 'text-on-surface-variant line-through' : 'text-primary-container'}`}>₹{special.price}</span>
+                            {specials.map(special => {
+                                const isOverBudget = budgetMode && special.price >= dailyAllowance;
+                                const isUnavailable = !special.is_available || isOverBudget || !canteen.is_open;
+                                
+                                return (
+                                    <div key={special.id} className={`min-w-[280px] w-[280px] md:w-[320px] bg-surface-container-low rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.2)] border border-surface-container-highest snap-start relative flex-shrink-0 group ${isUnavailable ? 'opacity-60 grayscale-[50%]' : ''}`}>
+                                        <div className="h-[160px] bg-surface-variant relative overflow-hidden rounded-t-[12px] m-xs">
+                                            <img src={special.image_url || DEFAULT_IMAGE} alt={special.name} className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${isUnavailable ? 'grayscale' : ''}`} />
                                         </div>
-                                        <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">{special.description}</p>
-                                        
-                                        {!special.is_available ? (
-                                            <div className="mt-sm w-full py-2 flex justify-center items-center">
-                                                <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Sold Out</span>
+                                        <div className="p-md flex flex-col gap-xs">
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="font-label-md text-label-md text-on-surface">{special.name}</h3>
+                                                <span className={`font-label-md text-label-md ${isUnavailable ? 'text-on-surface-variant line-through' : 'text-primary-container'}`}>₹{special.price}</span>
                                             </div>
-                                        ) : !canteen.is_open ? (
-                                            <div className="mt-sm w-full py-2 flex justify-center items-center">
-                                                <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Closed</span>
-                                            </div>
-                                        ) : (
-                                            <button onClick={() => addToCart({ ...special, image: special.image_url || DEFAULT_IMAGE }, id)} className="mt-sm w-full bg-surface-bright text-on-surface font-label-md text-label-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors flex justify-center items-center gap-2 border border-outline-variant/30">
-                                                <span className="material-symbols-outlined" data-icon="add">add</span> Add
-                                            </button>
-                                        )}
+                                            <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">{special.description}</p>
+                                            
+                                            {!special.is_available ? (
+                                                <div className="mt-sm w-full py-2 flex justify-center items-center">
+                                                    <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Sold Out</span>
+                                                </div>
+                                            ) : isOverBudget ? (
+                                                <div className="mt-sm w-full py-2 flex justify-center items-center">
+                                                    <span className="px-3 py-1 rounded text-[12px] font-bold bg-red-900/50 text-red-400 border border-red-900/50 uppercase tracking-wider">Over Budget</span>
+                                                </div>
+                                            ) : !canteen.is_open ? (
+                                                <div className="mt-sm w-full py-2 flex justify-center items-center">
+                                                    <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Closed</span>
+                                                </div>
+                                            ) : (
+                                                <SpecialAddToCartButton special={special} canteenId={id} />
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </section>
                 )}
@@ -153,7 +159,7 @@ const Canteen = () => {
                                 <span className="text-slate-300 font-label-md">Budget Mode</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                {budgetMode && <span className="text-green-400 font-label-md">₹{currentBalance} left</span>}
+                                {budgetMode && <span className="text-green-400 font-label-md">₹{Math.floor(dailyAllowance)}/day</span>}
                                 <button 
                                     onClick={() => setBudgetMode(!budgetMode)}
                                     className={`w-12 h-6 rounded-full p-1 transition-colors relative flex items-center ${budgetMode ? 'bg-green-500' : 'bg-slate-700'}`}
@@ -183,11 +189,11 @@ const Canteen = () => {
                         <div className="flex gap-4 items-start mt-12">
                             {/* Column 1 */}
                             <div className="flex-1 flex flex-col gap-14">
-                                {col1.map(item => <MenuItem key={item.id} item={item} addToCart={() => addToCart({ ...item, image: item.image_url || DEFAULT_IMAGE }, id)} removeFromCart={() => removeFromCart(item.id)} quantity={cartItems.find(i => i.id === item.id)?.quantity || 0} budgetMode={budgetMode} currentBalance={currentBalance} canteenOpen={canteen.is_open} />)}
+                                {col1.map(item => <MenuItem key={item.id} item={item} canteenId={id} budgetMode={budgetMode} currentBalance={currentBalance} canteenOpen={canteen.is_open} />)}
                             </div>
                             {/* Column 2 (Staggered) */}
                             <div className="flex-1 flex flex-col gap-14 mt-12">
-                                {col2.map(item => <MenuItem key={item.id} item={item} addToCart={() => addToCart({ ...item, image: item.image_url || DEFAULT_IMAGE }, id)} removeFromCart={() => removeFromCart(item.id)} quantity={cartItems.find(i => i.id === item.id)?.quantity || 0} budgetMode={budgetMode} currentBalance={currentBalance} canteenOpen={canteen.is_open} />)}
+                                {col2.map(item => <MenuItem key={item.id} item={item} canteenId={id} budgetMode={budgetMode} currentBalance={currentBalance} canteenOpen={canteen.is_open} />)}
                             </div>
                         </div>
                     </section>
@@ -203,14 +209,30 @@ const Canteen = () => {
     );
 };
 
-const MenuItem = ({ item, addToCart, removeFromCart, quantity, budgetMode, currentBalance, canteenOpen }) => {
-    const isOverBudget = budgetMode && item.price > currentBalance;
+const SpecialAddToCartButton = ({ special, canteenId }) => {
+    const addToCart = useCartStore((state) => state.addToCart);
+    return (
+        <button onClick={() => addToCart({ ...special, image: special.image_url || DEFAULT_IMAGE }, canteenId)} className="mt-sm w-full bg-surface-bright text-on-surface font-label-md text-label-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors flex justify-center items-center gap-2 border border-outline-variant/30">
+            <span className="material-symbols-outlined" data-icon="add">add</span> Add
+        </button>
+    );
+};
+
+const MenuItem = React.memo(({ item, canteenId, budgetMode, dailyAllowance, canteenOpen }) => {
+    const isOverBudget = budgetMode && item.price >= dailyAllowance;
     const isUnavailable = !item.is_available || isOverBudget || !canteenOpen;
+
+    const quantity = useCartStore((state) => state.items.find(i => i.id === item.id)?.quantity || 0);
+    const addToCart = useCartStore((state) => state.addToCart);
+    const removeFromCart = useCartStore((state) => state.removeFromCart);
+
+    const handleAdd = () => addToCart({ ...item, image: item.image_url || DEFAULT_IMAGE }, canteenId);
+    const handleRemove = () => removeFromCart(item.id);
 
     return (
         <div className={`bg-surface-container-lowest border border-surface-container-highest rounded-2xl p-4 pt-14 relative flex flex-col items-center text-center shadow-lg ${isUnavailable ? 'opacity-60 grayscale-[50%]' : 'hover:bg-surface-container-low transition-colors'}`}>
             <div className={`absolute -top-10 left-1/2 -translate-x-1/2 w-[100px] h-[100px] rounded-full overflow-hidden shadow-[0_8px_16px_rgba(0,0,0,0.4)] border-[6px] border-surface-container-lowest bg-surface-variant ${isUnavailable ? 'grayscale' : ''}`}>
-                <img src={item.image_url || DEFAULT_IMAGE} alt={item.name} className="w-full h-full object-cover" />
+                <img src={item.image_url || DEFAULT_IMAGE} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
             </div>
             <h3 className="font-label-md text-on-surface mt-2 line-clamp-1">{item.name}</h3>
             
@@ -241,18 +263,18 @@ const MenuItem = ({ item, addToCart, removeFromCart, quantity, budgetMode, curre
                 <span className={`font-label-md ${isUnavailable ? 'text-on-surface-variant line-through' : 'text-primary-container ml-1'}`}>₹{item.price}</span>
                 
                 {!isUnavailable && quantity === 0 && (
-                    <button onClick={addToCart} className="w-7 h-7 rounded-full bg-surface-bright text-on-surface flex items-center justify-center hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm">
+                    <button onClick={handleAdd} className="w-7 h-7 rounded-full bg-surface-bright text-on-surface flex items-center justify-center hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm">
                         <span className="material-symbols-outlined text-[16px]">add</span>
                     </button>
                 )}
 
                 {!isUnavailable && quantity > 0 && (
                     <div className="flex items-center bg-surface-container-high rounded-full border border-outline-variant/30 h-7">
-                        <button onClick={removeFromCart} className="w-6 h-full flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors">
+                        <button onClick={handleRemove} className="w-6 h-full flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors">
                             <span className="material-symbols-outlined text-[14px]">remove</span>
                         </button>
                         <span className="font-label-sm text-label-sm text-on-surface px-0.5 min-w-[16px] text-center">{quantity}</span>
-                        <button onClick={addToCart} className="w-6 h-full flex items-center justify-center text-primary-container hover:text-primary transition-colors">
+                        <button onClick={handleAdd} className="w-6 h-full flex items-center justify-center text-primary-container hover:text-primary transition-colors">
                             <span className="material-symbols-outlined text-[14px]">add</span>
                         </button>
                     </div>
@@ -260,6 +282,6 @@ const MenuItem = ({ item, addToCart, removeFromCart, quantity, budgetMode, curre
             </div>
         </div>
     );
-};
+});
 
 export default Canteen;

@@ -2,7 +2,7 @@ import React from 'react';
 
 const GoldenGlowButton = ({ children, onClick, className = '', variant = 'primary', ...props }) => {
   // Base styling for the dark glass button
-  const baseClasses = "relative overflow-hidden px-6 py-2.5 rounded-xl bg-black/60 backdrop-blur-md font-semibold tracking-wide flex items-center justify-center gap-2 active:scale-95 transition-all duration-300 ease-out group";
+  const baseClasses = "relative overflow-hidden px-6 py-2.5 rounded-xl bg-black/80 font-semibold tracking-wide flex items-center justify-center gap-2 active:scale-95 transition-all duration-300 ease-out group";
   
   // Primary (Gold) variant
   const primaryClasses = "border border-[#D4AF37]/40 text-[#D4AF37] hover:border-[#D4AF37]/80 hover:-translate-y-0.5";

@@ -104,12 +104,20 @@ class OrderRepository:
         result = await self.session.execute(stmt)
         orders = list(result.scalars().all())
         
-        # In a real app with SQLAlchemy 2.0 relationships, we'd use selectinload.
-        # But here we'll just fetch items for all orders manually or define the relationship.
-        for order in orders:
-            items_stmt = select(OrderItem).where(OrderItem.order_id == order.id)
+        if orders:
+            order_ids = [o.id for o in orders]
+            items_stmt = select(OrderItem).where(OrderItem.order_id.in_(order_ids))
             items_result = await self.session.execute(items_stmt)
-            order.items = items_result.scalars().all()
+            all_items = items_result.scalars().all()
+            
+            from collections import defaultdict
+            items_by_order = defaultdict(list)
+            for item in all_items:
+                items_by_order[item.order_id].append(item)
+                
+            for order in orders:
+                order.items = items_by_order[order.id]
+                
         return orders
 
     async def get_orders_by_canteen(self, canteen_id: UUID, statuses: Optional[List[str]] = None) -> List[Order]:
@@ -121,10 +129,20 @@ class OrderRepository:
         result = await self.session.execute(stmt)
         orders = list(result.scalars().all())
         
-        for order in orders:
-            items_stmt = select(OrderItem).where(OrderItem.order_id == order.id)
+        if orders:
+            order_ids = [o.id for o in orders]
+            items_stmt = select(OrderItem).where(OrderItem.order_id.in_(order_ids))
             items_result = await self.session.execute(items_stmt)
-            order.items = items_result.scalars().all()
+            all_items = items_result.scalars().all()
+            
+            from collections import defaultdict
+            items_by_order = defaultdict(list)
+            for item in all_items:
+                items_by_order[item.order_id].append(item)
+                
+            for order in orders:
+                order.items = items_by_order[order.id]
+                
         return orders
 
     async def update_order_status(self, order_id: UUID, status: str) -> Optional[Order]:
