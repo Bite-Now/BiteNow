@@ -4,6 +4,7 @@ import api from '../services/api';
 import { useCartStore } from '../store/useCartStore';
 import { useWalletStore } from '../store/useWalletStore';
 import { useNavigate } from 'react-router-dom';
+import { listCanteens } from '../services/menuApi';
 
 const GENERATION_TEXTS = [
     "Waking up the AI Chef...",
@@ -98,6 +99,7 @@ const Surprise = () => {
     const [isSequenceDone, setIsSequenceDone] = useState(false);
     const [showLocalCart, setShowLocalCart] = useState(false);
     const [cartPulse, setCartPulse] = useState(false);
+    const [openCanteenIds, setOpenCanteenIds] = useState(new Set());
     
     // Track direction for the exit animation of swiped cards
     const [lastSwipeDirection, setLastSwipeDirection] = useState(null);
@@ -126,6 +128,19 @@ const Surprise = () => {
         }
     }, [flowState, isSequenceDone, fetchedDeck]);
 
+    useEffect(() => {
+        const fetchCanteens = async () => {
+            try {
+                const data = await listCanteens();
+                const openIds = new Set(data.filter(c => c.is_open).map(c => c.id));
+                setOpenCanteenIds(openIds);
+            } catch (err) {
+                console.error("Failed to fetch canteens:", err);
+            }
+        };
+        fetchCanteens();
+    }, []);
+
     const handleSuggestAgain = () => {
         setFlowState('setup');
         setShowLocalCart(false);
@@ -139,6 +154,17 @@ const Surprise = () => {
         setDeck(prev => prev.filter(c => c.id !== cardId));
         
         if (direction === 'right') {
+            const hasClosedCanteen = items.some(item => {
+                const cid = item.canteen_id || item.canteenId;
+                // If cid exists and is NOT in openCanteenIds, it's closed
+                return cid && !openCanteenIds.has(cid);
+            });
+
+            if (hasClosedCanteen) {
+                alert("Cannot add to cart. This canteen is currently closed.");
+                return;
+            }
+
             // Add items to cart
             items.forEach(item => {
                 addToCart(item, item.canteen_id || item.canteenId || 'c1');

@@ -43,6 +43,14 @@ async def mock_payment_success(
     from datetime import datetime, timezone
     from app.modules.orders.models import Order as OrderModel
 
+    # 1. Verify canteen is open
+    canteen_result = await db.execute(select(Canteen).where(Canteen.id == request.canteen_id))
+    canteen = canteen_result.scalars().first()
+    if not canteen:
+        raise HTTPException(status_code=404, detail="Canteen not found.")
+    if not canteen.is_open:
+        raise HTTPException(status_code=400, detail="This canteen is currently closed.")
+
     order = await service.create_paid_order(user.id, request)
 
     # Calculate updated monthly spending

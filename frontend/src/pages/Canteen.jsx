@@ -98,6 +98,13 @@ const Canteen = () => {
                 <div className="w-10"></div>
             </header>
                 
+                {!canteen.is_open && (
+                    <div className="bg-error-container text-on-error-container p-4 rounded-xl text-center shadow-sm -mt-2 mb-2 font-bold flex items-center justify-center gap-2">
+                        <span className="material-symbols-outlined">gpp_maybe</span>
+                        This canteen is currently closed. Orders cannot be placed.
+                    </div>
+                )}
+
                 {/* Specials Carousel */}
                 {specials && specials.length > 0 && (
                     <section>
@@ -120,6 +127,10 @@ const Canteen = () => {
                                         {!special.is_available ? (
                                             <div className="mt-sm w-full py-2 flex justify-center items-center">
                                                 <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Sold Out</span>
+                                            </div>
+                                        ) : !canteen.is_open ? (
+                                            <div className="mt-sm w-full py-2 flex justify-center items-center">
+                                                <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Closed</span>
                                             </div>
                                         ) : (
                                             <button onClick={() => addToCart({ ...special, image: special.image_url || DEFAULT_IMAGE }, id)} className="mt-sm w-full bg-surface-bright text-on-surface font-label-md text-label-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors flex justify-center items-center gap-2 border border-outline-variant/30">
@@ -172,11 +183,11 @@ const Canteen = () => {
                         <div className="flex gap-4 items-start mt-12">
                             {/* Column 1 */}
                             <div className="flex-1 flex flex-col gap-14">
-                                {col1.map(item => <MenuItem key={item.id} item={item} addToCart={() => addToCart({ ...item, image: item.image_url || DEFAULT_IMAGE }, id)} removeFromCart={() => removeFromCart(item.id)} quantity={cartItems.find(i => i.id === item.id)?.quantity || 0} budgetMode={budgetMode} currentBalance={currentBalance} />)}
+                                {col1.map(item => <MenuItem key={item.id} item={item} addToCart={() => addToCart({ ...item, image: item.image_url || DEFAULT_IMAGE }, id)} removeFromCart={() => removeFromCart(item.id)} quantity={cartItems.find(i => i.id === item.id)?.quantity || 0} budgetMode={budgetMode} currentBalance={currentBalance} canteenOpen={canteen.is_open} />)}
                             </div>
                             {/* Column 2 (Staggered) */}
                             <div className="flex-1 flex flex-col gap-14 mt-12">
-                                {col2.map(item => <MenuItem key={item.id} item={item} addToCart={() => addToCart({ ...item, image: item.image_url || DEFAULT_IMAGE }, id)} removeFromCart={() => removeFromCart(item.id)} quantity={cartItems.find(i => i.id === item.id)?.quantity || 0} budgetMode={budgetMode} currentBalance={currentBalance} />)}
+                                {col2.map(item => <MenuItem key={item.id} item={item} addToCart={() => addToCart({ ...item, image: item.image_url || DEFAULT_IMAGE }, id)} removeFromCart={() => removeFromCart(item.id)} quantity={cartItems.find(i => i.id === item.id)?.quantity || 0} budgetMode={budgetMode} currentBalance={currentBalance} canteenOpen={canteen.is_open} />)}
                             </div>
                         </div>
                     </section>
@@ -192,9 +203,9 @@ const Canteen = () => {
     );
 };
 
-const MenuItem = ({ item, addToCart, removeFromCart, quantity, budgetMode, currentBalance }) => {
+const MenuItem = ({ item, addToCart, removeFromCart, quantity, budgetMode, currentBalance, canteenOpen }) => {
     const isOverBudget = budgetMode && item.price > currentBalance;
-    const isUnavailable = !item.is_available || isOverBudget;
+    const isUnavailable = !item.is_available || isOverBudget || !canteenOpen;
 
     return (
         <div className={`bg-surface-container-lowest border border-surface-container-highest rounded-2xl p-4 pt-14 relative flex flex-col items-center text-center shadow-lg ${isUnavailable ? 'opacity-60 grayscale-[50%]' : 'hover:bg-surface-container-low transition-colors'}`}>
