@@ -9,6 +9,8 @@ class CanteenResponse(BaseModel):
     name: str
     slug: str
     is_open: bool
+    image_url: Optional[str] = None
+    description: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
