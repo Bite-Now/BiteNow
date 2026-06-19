@@ -283,15 +283,36 @@ const VendorProducts = () => {
     };
 
     const toggleStock = async (itemId, newAvailableStatus) => {
+        // Optimistic UI update
+        setProducts(prev => {
+            const newProducts = { ...prev };
+            if (activeCategoryId === 'special') {
+                newProducts.specialMenu = prev.specialMenu.map(item => 
+                    item.id === itemId ? { ...item, is_available: newAvailableStatus } : item
+                );
+            } else {
+                newProducts.categories = prev.categories.map(cat => ({
+                    ...cat,
+                    items: cat.items.map(item => 
+                        item.id === itemId ? { ...item, is_available: newAvailableStatus } : item
+                    )
+                }));
+            }
+            return newProducts;
+        });
+
         try {
             if (activeCategoryId === 'special') {
                 await updateDailySpecial(itemId, { is_available: newAvailableStatus });
             } else {
                 await updateMenuItem(itemId, { is_available: newAvailableStatus });
             }
+            // Fire and forget fetch to ensure sync, without blocking UI
             fetchMenu();
         } catch (err) {
             console.error("Failed to update availability", err);
+            // Revert on failure
+            fetchMenu();
         }
     };
 
