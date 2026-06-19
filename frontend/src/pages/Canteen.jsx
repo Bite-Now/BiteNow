@@ -106,19 +106,26 @@ const Canteen = () => {
                         </div>
                         <div className="flex overflow-x-auto gap-md no-scrollbar pb-sm snap-x">
                             {specials.map(special => (
-                                <div key={special.id} className="min-w-[280px] w-[280px] md:w-[320px] bg-surface-container-low rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.2)] border border-surface-container-highest snap-start relative flex-shrink-0 group">
+                                <div key={special.id} className={`min-w-[280px] w-[280px] md:w-[320px] bg-surface-container-low rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.2)] border border-surface-container-highest snap-start relative flex-shrink-0 group ${!special.is_available ? 'opacity-60 grayscale-[50%]' : ''}`}>
                                     <div className="h-[160px] bg-surface-variant relative overflow-hidden rounded-t-[12px] m-xs">
-                                        <img src={special.image_url || DEFAULT_IMAGE} alt={special.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        <img src={special.image_url || DEFAULT_IMAGE} alt={special.name} className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!special.is_available ? 'grayscale' : ''}`} />
                                     </div>
                                     <div className="p-md flex flex-col gap-xs">
                                         <div className="flex justify-between items-start">
                                             <h3 className="font-label-md text-label-md text-on-surface">{special.name}</h3>
-                                            <span className="font-label-md text-label-md text-primary-container">₹{special.price}</span>
+                                            <span className={`font-label-md text-label-md ${!special.is_available ? 'text-on-surface-variant line-through' : 'text-primary-container'}`}>₹{special.price}</span>
                                         </div>
                                         <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">{special.description}</p>
-                                        <button onClick={() => addToCart({ ...special, image: special.image_url || DEFAULT_IMAGE }, id)} className="mt-sm w-full bg-surface-bright text-on-surface font-label-md text-label-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors flex justify-center items-center gap-2 border border-outline-variant/30">
-                                            <span className="material-symbols-outlined" data-icon="add">add</span> Add
-                                        </button>
+                                        
+                                        {!special.is_available ? (
+                                            <div className="mt-sm w-full py-2 flex justify-center items-center">
+                                                <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Sold Out</span>
+                                            </div>
+                                        ) : (
+                                            <button onClick={() => addToCart({ ...special, image: special.image_url || DEFAULT_IMAGE }, id)} className="mt-sm w-full bg-surface-bright text-on-surface font-label-md text-label-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors flex justify-center items-center gap-2 border border-outline-variant/30">
+                                                <span className="material-symbols-outlined" data-icon="add">add</span> Add
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}

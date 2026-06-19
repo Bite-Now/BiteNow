@@ -50,6 +50,7 @@ class DailySpecialBase(BaseModel):
     description: Optional[str] = None
     price: float = Field(..., gt=0)
     image_url: Optional[str] = None
+    is_available: bool = True
 
 class DailySpecialCreate(DailySpecialBase):
     pass
@@ -59,6 +60,7 @@ class DailySpecialUpdate(BaseModel):
     description: Optional[str] = None
     price: Optional[float] = Field(None, gt=0)
     image_url: Optional[str] = None
+    is_available: Optional[bool] = None
 
 class DailySpecialResponse(DailySpecialBase):
     id: UUID

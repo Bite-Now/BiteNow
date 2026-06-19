@@ -210,6 +210,7 @@ async def create_daily_special(
     name: str = Form(...),
     price: float = Form(...),
     description: Optional[str] = Form(None),
+    is_available: bool = Form(True),
     image_url: Optional[str] = Form(None),
     file: UploadFile = File(None),
     service: MenuService = Depends(get_menu_service),
@@ -228,6 +229,7 @@ async def create_daily_special(
         name=name,
         description=description,
         price=price,
+        is_available=is_available,
         image_url=new_image_url
     )
 
