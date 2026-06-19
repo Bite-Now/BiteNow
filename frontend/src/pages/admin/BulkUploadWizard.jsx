@@ -50,16 +50,24 @@ const BulkUploadWizard = ({ canteen, onClose, onSuccess }) => {
   // --- Step 3: Heuristic Categorization ---
   const autoCategorize = () => {
     const categories = {
-      Breakfast: ['dosa', 'idli', 'poha', 'upma', 'sandwich', 'tea', 'coffee', 'toast', 'paratha'],
-      Lunch: ['thali', 'rice', 'roti', 'paneer', 'dal', 'meal', 'curry', 'sabzi'],
-      Snacks: ['samosa', 'kachori', 'puff', 'chips', 'burger', 'pizza', 'fries', 'wrap', 'roll'],
+      'Beverages': ['tea', 'coffee', 'chai', 'juice', 'shake', 'lassi', 'water', 'soda'],
+      'Main Course': ['thali', 'rice', 'biryani', 'paneer', 'dal', 'curry', 'sabzi', 'meal'],
+      'Breads': ['roti', 'naan', 'paratha', 'kulcha', 'chapati'],
+      'Fast Food': ['burger', 'pizza', 'fries', 'wrap', 'roll', 'sandwich'],
+      'Snacks & Bites': ['samosa', 'kachori', 'puff', 'chips', 'chaat', 'pakora'],
+      'South Indian': ['dosa', 'idli', 'vada', 'uttapam', 'upma'],
+      'Desserts': ['sweet', 'gulab jamun', 'ice cream', 'pastry', 'cake', 'brownie']
     };
 
     const grouped = {
-      Breakfast: [],
-      Lunch: [],
-      Snacks: [],
-      Uncategorized: []
+      'Beverages': [],
+      'Main Course': [],
+      'Breads': [],
+      'Fast Food': [],
+      'Snacks & Bites': [],
+      'South Indian': [],
+      'Desserts': [],
+      'Uncategorized': []
     };
 
     parsedData.forEach(item => {

@@ -59,66 +59,68 @@ const MockPayment = () => {
     }
 
     return (
-        <div className="font-body-md flex flex-col min-h-screen bg-surface relative">
-            <header className="sticky top-0 z-50 bg-surface/80 backdrop-blur-md shadow-lg shadow-primary/5 flex items-center px-container-margin py-md">
-                <button 
-                    onClick={() => navigate(-1)}
-                    className="p-sm mr-sm text-on-surface hover:bg-surface-container rounded-full transition-colors active:scale-95"
-                    disabled={loading}
-                >
-                    <span className="material-symbols-outlined text-[24px]">arrow_back</span>
-                </button>
-                <h1 className="font-headline-md font-bold text-on-surface">Mock Payment</h1>
-            </header>
+        <div className="min-h-screen flex justify-center bg-[#0a0a0a] selection:bg-primary-container selection:text-on-primary-container">
+            <div className="relative w-full max-w-[440px] bg-surface shadow-2xl h-[100dvh] overflow-hidden flex flex-col font-body-md text-body-md text-on-background antialiased">
+                <header className="sticky top-0 z-50 bg-surface/80 backdrop-blur-md shadow-lg shadow-primary/5 flex items-center px-container-margin py-md shrink-0">
+                    <button 
+                        onClick={() => navigate(-1)}
+                        className="p-sm mr-sm text-on-surface hover:bg-surface-container rounded-full transition-colors active:scale-95"
+                        disabled={loading}
+                    >
+                        <span className="material-symbols-outlined text-[24px]">arrow_back</span>
+                    </button>
+                    <h1 className="font-headline-md font-bold text-on-surface">Mock Payment</h1>
+                </header>
 
-            <main className="flex-grow px-container-margin mt-4 space-y-md max-w-lg mx-auto w-full pb-8">
-                <div className="bg-surface-container-low rounded-xl p-md border border-surface-variant shadow-sm">
-                    <h2 className="font-headline-sm text-on-surface mb-4">Order Summary</h2>
-                    <div className="space-y-3 mb-6">
-                        {items.map(item => (
-                            <div key={item.id} className="flex justify-between items-center text-body-md">
-                                <span className="text-on-surface-variant">{item.quantity}x {item.name}</span>
-                                <span className="text-on-surface font-medium">₹{item.price * item.quantity}</span>
+                <main className="flex-1 overflow-y-auto no-scrollbar px-container-margin mt-4 space-y-md w-full pb-8">
+                    <div className="bg-surface-container-low rounded-xl p-md border border-surface-variant shadow-sm">
+                        <h2 className="font-headline-sm text-on-surface mb-4">Order Summary</h2>
+                        <div className="space-y-3 mb-6">
+                            {items.map(item => (
+                                <div key={item.id} className="flex justify-between items-center text-body-md">
+                                    <span className="text-on-surface-variant">{item.quantity}x {item.name}</span>
+                                    <span className="text-on-surface font-medium">₹{item.price * item.quantity}</span>
+                                </div>
+                            ))}
+                            <div className="border-t border-surface-variant pt-3 mt-3 flex justify-between items-center">
+                                <span className="font-label-lg text-on-surface font-bold">Total Amount</span>
+                                <span className="font-headline-md text-primary font-bold">₹{totalAmount}</span>
                             </div>
-                        ))}
-                        <div className="border-t border-surface-variant pt-3 mt-3 flex justify-between items-center">
-                            <span className="font-label-lg text-on-surface font-bold">Total Amount</span>
-                            <span className="font-headline-md text-primary font-bold">₹{totalAmount}</span>
+                        </div>
+
+                        {error && (
+                            <div className="bg-error/10 text-error p-3 rounded-lg mb-6 flex items-start gap-2">
+                                <span className="material-symbols-outlined text-[20px]">error</span>
+                                <span className="text-body-sm">{error}</span>
+                            </div>
+                        )}
+
+                        <div className="space-y-3">
+                            <button 
+                                onClick={() => handlePayment(true)}
+                                disabled={loading}
+                                className={`w-full py-md font-label-md rounded-xl flex items-center justify-center gap-2 transition-all ${
+                                    loading ? 'bg-surface-variant text-on-surface-variant' : 'bg-[#00D26A] text-black hover:bg-[#00c262] active:scale-[0.98]'
+                                }`}
+                            >
+                                <span className="material-symbols-outlined">check_circle</span>
+                                {loading ? 'Processing...' : 'Simulate Payment Success'}
+                            </button>
+
+                            <button 
+                                onClick={() => handlePayment(false)}
+                                disabled={loading}
+                                className={`w-full py-md font-label-md rounded-xl flex items-center justify-center gap-2 transition-all ${
+                                    loading ? 'bg-surface-variant text-on-surface-variant' : 'bg-error/10 text-error border border-error/20 hover:bg-error/20 active:scale-[0.98]'
+                                }`}
+                            >
+                                <span className="material-symbols-outlined">cancel</span>
+                                Simulate Payment Failure
+                            </button>
                         </div>
                     </div>
-
-                    {error && (
-                        <div className="bg-error/10 text-error p-3 rounded-lg mb-6 flex items-start gap-2">
-                            <span className="material-symbols-outlined text-[20px]">error</span>
-                            <span className="text-body-sm">{error}</span>
-                        </div>
-                    )}
-
-                    <div className="space-y-3">
-                        <button 
-                            onClick={() => handlePayment(true)}
-                            disabled={loading}
-                            className={`w-full py-md font-label-md rounded-xl flex items-center justify-center gap-2 transition-all ${
-                                loading ? 'bg-surface-variant text-on-surface-variant' : 'bg-[#00D26A] text-black hover:bg-[#00c262] active:scale-[0.98]'
-                            }`}
-                        >
-                            <span className="material-symbols-outlined">check_circle</span>
-                            {loading ? 'Processing...' : 'Simulate Payment Success'}
-                        </button>
-
-                        <button 
-                            onClick={() => handlePayment(false)}
-                            disabled={loading}
-                            className={`w-full py-md font-label-md rounded-xl flex items-center justify-center gap-2 transition-all ${
-                                loading ? 'bg-surface-variant text-on-surface-variant' : 'bg-error/10 text-error border border-error/20 hover:bg-error/20 active:scale-[0.98]'
-                            }`}
-                        >
-                            <span className="material-symbols-outlined">cancel</span>
-                            Simulate Payment Failure
-                        </button>
-                    </div>
-                </div>
-            </main>
+                </main>
+            </div>
         </div>
     );
 };

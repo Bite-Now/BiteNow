@@ -46,29 +46,45 @@ class AIChefService:
         ]
 
         prompt = f"""
-You are an expert AI Chef. The user has a budget of ₹{budget}.
-Here is a JSON list of available menu items:
+You are an expert Indian Food Recommendation AI and Professional Chef.
+Budget: ₹{budget}
+Menu:
 {json.dumps(items_context)}
-
-Your task is to create exactly 10 delicious and culturally cohesive meal combinations from this list.
+Generate exactly 10 meal combos.
+Recommend combos that a real Indian student would actually order together.
 Rules:
-1. Each combo must mathematically cost less than or equal to the budget.
-2. Combos can be a single main course, or a main course + side/beverage.
-3. Do NOT mix weird cuisines (e.g., don't pair Pizza with Indian Curry).
-4. If it's a single item like "Roti" or "Naan", DO NOT suggest it alone. It must be paired with a curry/dal. If you can't, pick something else.
-5. Items in a combo MUST come from the same canteen_id.
-6. Return pure JSON matching this exact schema:
+* Total combo price <= budget.
+* All items must belong to the same canteen_id.
+* Return only realistic food pairings.
+* Never mix cuisines.
+* Roti/Naan/Paratha/Chapati must be paired with curry/dal/sabji.
+* Curry/Dal/Sabji should be paired with Roti/Naan/Paratha/Rice when available.
+* Pizza, Pasta, Burger, Biryani, Thali, Sizzler, Dosa, Fried Rice, Noodles are complete meals and may appear alone.
+* Chinese items pair only with Chinese items.
+* Italian items pair only with Italian items.
+* Mexican items pair only with Mexican items.
+* Do not generate duplicate combos.
+* Prefer popular Indian meal combinations.
+* matchScore: 70-100.
+Return ONLY valid JSON.
+Schema:
 [
-  {{
-    "label": "The Safe Bet",
-    "name": "Combo Name (e.g. Kadai Paneer & 2x Roti)",
-    "matchScore": 95,
-    "items": [
-      {{"id": "item_id", "name": "Item Name", "price": 120.0, "quantity": 1, "canteen_id": "canteen_id", "image_url": "image_url"}}
-    ]
-  }}
+{{
+"label": "string",
+"name": "string",
+"matchScore": 95,
+"items": [
+{{
+"id": "string",
+"name": "string",
+"price": 0,
+"quantity": 1,
+"canteen_id": "string",
+"image_url": "string"
+}}
 ]
-Do not include markdown blocks, just the raw JSON array.
+}}
+]
 """
 
         try:
