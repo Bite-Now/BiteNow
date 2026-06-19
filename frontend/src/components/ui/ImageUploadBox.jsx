@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { UploadCloud, Image as ImageIcon, X } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, X, Loader2 } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 
 const ImageUploadBox = ({ label, value, onChange }) => {
     const fileInputRef = useRef(null);
     const [dragActive, setDragActive] = useState(false);
+    const [isCompressing, setIsCompressing] = useState(false);
 
     const handleDrag = (e) => {
         e.preventDefault();
@@ -32,15 +34,39 @@ const ImageUploadBox = ({ label, value, onChange }) => {
         }
     };
 
-    const handleFile = (file) => {
+    const handleFile = async (file) => {
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-        if (validTypes.includes(file.type)) {
-            // Generate a local preview URL
-            const previewUrl = URL.createObjectURL(file);
-            // Call onChange with both the file and the preview URL
-            onChange(file, previewUrl);
-        } else {
+        if (!validTypes.includes(file.type)) {
             alert('Please upload a JPG, PNG, or WebP image.');
+            return;
+        }
+
+        setIsCompressing(true);
+        try {
+            const options = {
+                maxSizeMB: 0.5,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+                fileType: file.type
+            };
+            const compressedBlob = await imageCompression(file, options);
+            
+            // Ensure it's a perfect File object so FormData passes the correct filename and mime-type to FastAPI
+            const finalFile = new File([compressedBlob], file.name, {
+                type: file.type,
+                lastModified: Date.now(),
+            });
+            
+            // Generate a local preview URL
+            const previewUrl = URL.createObjectURL(finalFile);
+            
+            // Call onChange with both the file and the preview URL
+            onChange(finalFile, previewUrl);
+        } catch (error) {
+            console.error("Error compressing image:", error);
+            alert("Failed to process image. Please try another file.");
+        } finally {
+            setIsCompressing(false);
         }
     };
 
@@ -72,7 +98,12 @@ const ImageUploadBox = ({ label, value, onChange }) => {
                     className="hidden" 
                 />
 
-                {value ? (
+                {isCompressing ? (
+                    <div className="flex flex-col items-center justify-center text-amber-500">
+                        <Loader2 className="w-8 h-8 mb-2 animate-spin" />
+                        <p className="text-sm font-medium">Compressing image...</p>
+                    </div>
+                ) : value ? (
                     <>
                         <img src={value} alt="Preview" className="w-full h-full object-cover opacity-80" />
                         <button 
@@ -87,7 +118,7 @@ const ImageUploadBox = ({ label, value, onChange }) => {
                     <div className="flex flex-col items-center justify-center text-slate-400">
                         <UploadCloud className="w-8 h-8 mb-2 text-slate-500" />
                         <p className="text-sm font-medium">Click or drag image to upload</p>
-                        <p className="text-xs mt-1 opacity-70">JPG, PNG, or WebP (max 5MB)</p>
+                        <p className="text-xs mt-1 opacity-70">Auto-compressed before upload</p>
                     </div>
                 )}
             </div>
