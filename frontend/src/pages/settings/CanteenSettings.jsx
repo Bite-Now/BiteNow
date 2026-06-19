@@ -35,24 +35,21 @@ const CanteenSettings = () => {
         e.preventDefault();
         setIsSaving(true);
         try {
-            let finalImageUrl = imageUrl;
+            const formData = new FormData();
+            formData.append('name', canteenName);
+            formData.append('description', description);
+            formData.append('is_open', isOpen);
+            
             if (imageFile) {
-                const formData = new FormData();
                 formData.append('file', imageFile);
-                const uploadRes = await api.post('/owner/canteen/upload-image', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-                finalImageUrl = uploadRes.data.image_url;
-                setImageUrl(finalImageUrl); // Update local state with remote URL
-                setImageFile(null); // Clear file
+            } else if (imageUrl) {
+                formData.append('image_url', imageUrl);
             }
 
-            await api.patch('/owner/canteen', {
-                name: canteenName,
-                description: description,
-                image_url: finalImageUrl,
-                is_open: isOpen
-            });
+            const response = await api.patch('/owner/canteen', formData);
+            
+            // If the server returns a new image_url or we want to reset file state
+            setImageFile(null);
             alert('Canteen settings updated successfully!');
         } catch (err) {
             console.error('Failed to update canteen:', err);

@@ -118,12 +118,11 @@ const BulkUploadWizard = ({ canteen, onClose, onSuccess }) => {
       setIsPublishing(true);
       setPublishError(null);
       
-      // The backend needs a POST to /menu/{canteen_id}/bulk ideally,
-      // but let's assume we post them one by one if bulk is not available,
-      // or we check if there's a bulk endpoint.
-      // Since no bulk endpoint was mentioned in the spec, we'll iterate.
+      let progress = 0;
       for (const item of validItemsToUpload) {
-        await api.post(`/owner/menu?canteen_id=${canteen.id}`, item);
+        // Create each menu item
+        await api.post(`/owner/canteens/${canteen.id}/menu`, item);
+        progress++;
       }
       
       onSuccess();

@@ -25,26 +25,20 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting })
         if (!name || !price) return;
 
         try {
-            let finalImageUrl = image;
+            const formData = new FormData();
+            formData.append('name', name);
+            if (desc) formData.append('description', desc);
+            formData.append('price', parseFloat(price.replace('₹', '')));
+            if (categoryName !== 'special') formData.append('category', categoryName);
+            formData.append('is_available', true);
+            
             if (imageFile) {
-                const formData = new FormData();
                 formData.append('file', imageFile);
-                const uploadRes = await api.post('/owner/canteen/upload-image', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-                finalImageUrl = uploadRes.data.image_url;
-                setImage(finalImageUrl);
-                setImageFile(null);
+            } else if (image) {
+                formData.append('image_url', image);
             }
 
-            await onAdd({
-                name,
-                description: desc || undefined,
-                price: parseFloat(price.replace('₹', '')),
-                image_url: finalImageUrl || undefined,
-                category: categoryName !== 'special' ? categoryName : undefined,
-                is_available: true
-            });
+            await onAdd(formData);
 
             onClose();
             setName(''); setDesc(''); setPrice(''); setImage('');
