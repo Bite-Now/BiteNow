@@ -72,12 +72,6 @@ const MenuEditor = ({ canteen, onBack }) => {
             <Upload className="w-4 h-4 mr-2" />
             Bulk Upload
           </button>
-          <button 
-            className="flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 border border-amber-500 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Item
-          </button>
         </div>
       </div>
 
@@ -95,7 +89,7 @@ const MenuEditor = ({ canteen, onBack }) => {
           <MenuSquare className="w-12 h-12 text-slate-600 mb-3" />
           <p className="text-lg font-medium text-slate-300">No Menu Items Found</p>
           <p className="text-sm mt-1 text-slate-500">
-            Click 'Bulk Upload' or 'Add Item' to start building the menu.
+            Click 'Bulk Upload' to start building the menu.
           </p>
         </div>
       ) : (

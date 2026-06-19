@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
+import api from '../../services/api';
 import CollapsibleSection from '../../components/common/CollapsibleSection';
 import GlassModal from '../../components/ui/GlassModal';
 import GlassInput from '../../components/ui/GlassInput';
 import GlassButton from '../../components/ui/GlassButton';
 import GoldenGlowButton from '../../components/ui/GoldenGlowButton';
+import ImageUploadBox from '../../components/ui/ImageUploadBox';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCurrentCanteen } from '../../hooks/useCurrentCanteen';
 import { getCanteenMenu, createMenuItem, updateMenuItem, deleteMenuItem, createDailySpecial, updateDailySpecial, deleteDailySpecial } from '../../services/menuApi';
@@ -16,17 +18,30 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting })
     const [desc, setDesc] = useState('');
     const [price, setPrice] = useState('');
     const [image, setImage] = useState('');
+    const [imageFile, setImageFile] = useState(null);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!name || !price) return;
 
         try {
+            let finalImageUrl = image;
+            if (imageFile) {
+                const formData = new FormData();
+                formData.append('file', imageFile);
+                const uploadRes = await api.post('/owner/canteen/upload-image', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                finalImageUrl = uploadRes.data.image_url;
+                setImage(finalImageUrl);
+                setImageFile(null);
+            }
+
             await onAdd({
                 name,
                 description: desc || undefined,
                 price: parseFloat(price.replace('₹', '')),
-                image_url: image || undefined,
+                image_url: finalImageUrl || undefined,
                 category: categoryName !== 'special' ? categoryName : undefined,
                 is_available: true
             });
@@ -45,10 +60,18 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categoryName, isSubmitting })
             title={`Add to ${categoryName || 'Menu'}`}
         >
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <GlassInput
-                    label="Image URL"
+                <ImageUploadBox
+                    label="Product Image"
                     value={image}
-                    onChange={(e) => setImage(e.target.value)}
+                    onChange={(file, previewUrl) => {
+                        if (file) {
+                            setImage(previewUrl);
+                            setImageFile(file);
+                        } else {
+                            setImage('');
+                            setImageFile(null);
+                        }
+                    }}
                 />
 
                 <GlassInput

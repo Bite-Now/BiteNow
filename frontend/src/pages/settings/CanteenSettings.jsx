@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import GlassInput from '../../components/ui/GlassInput';
 import GoldenGlowButton from '../../components/ui/GoldenGlowButton';
+import ImageUploadBox from '../../components/ui/ImageUploadBox';
 import { Loader2 } from 'lucide-react';
 
 const CanteenSettings = () => {
     const [canteenName, setCanteenName] = useState('');
     const [description, setDescription] = useState('');
     const [imageUrl, setImageUrl] = useState('');
+    const [imageFile, setImageFile] = useState(null);
     const [isOpen, setIsOpen] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -33,10 +35,22 @@ const CanteenSettings = () => {
         e.preventDefault();
         setIsSaving(true);
         try {
+            let finalImageUrl = imageUrl;
+            if (imageFile) {
+                const formData = new FormData();
+                formData.append('file', imageFile);
+                const uploadRes = await api.post('/owner/canteen/upload-image', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                finalImageUrl = uploadRes.data.image_url;
+                setImageUrl(finalImageUrl); // Update local state with remote URL
+                setImageFile(null); // Clear file
+            }
+
             await api.patch('/owner/canteen', {
                 name: canteenName,
                 description: description,
-                image_url: imageUrl,
+                image_url: finalImageUrl,
                 is_open: isOpen
             });
             alert('Canteen settings updated successfully!');
@@ -72,11 +86,18 @@ const CanteenSettings = () => {
                         value={description} 
                         onChange={(e) => setDescription(e.target.value)} 
                     />
-                    <GlassInput 
-                        label="Banner Image URL" 
+                    <ImageUploadBox 
+                        label="Banner Image" 
                         value={imageUrl} 
-                        onChange={(e) => setImageUrl(e.target.value)} 
-                        placeholder="https://example.com/banner.jpg"
+                        onChange={(file, previewUrl) => {
+                            if (file) {
+                                setImageUrl(previewUrl);
+                                setImageFile(file);
+                            } else {
+                                setImageUrl('');
+                                setImageFile(null);
+                            }
+                        }} 
                     />
                     
                     <div className="flex flex-col gap-2 mt-2">

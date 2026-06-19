@@ -1,14 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 from uuid import UUID
+import uuid
+import mimetypes
 
 from app.core.database import get_db
 from app.modules.auth.schemas import StaffCreate, UserSchema, CanteenUpdate
 from app.modules.auth.models import User, StaffAssignment, Canteen
 from app.core.dependencies import require_owner
 from app.core.clerk import create_user
+from app.core.supabase_client import supabase
 
 router = APIRouter(prefix="/owner/staff", tags=["owner", "staff"])
 canteen_router = APIRouter(prefix="/owner/canteen", tags=["owner", "canteen"])
@@ -60,8 +63,39 @@ async def update_canteen(
         canteen.is_open = data.is_open
         
     await db.commit()
-    await db.refresh(canteen)
-    return {"message": "Canteen updated successfully"}
+    
+    return {"message": "Canteen settings updated successfully"}
+
+@canteen_router.post("/upload-image", response_model=dict)
+async def upload_image(
+    file: UploadFile = File(...),
+    owner: User = Depends(require_owner)
+):
+    valid_extensions = ['image/jpeg', 'image/png', 'image/webp']
+    if file.content_type not in valid_extensions:
+        raise HTTPException(status_code=400, detail="Invalid file type. Only JPG, PNG, and WebP are allowed.")
+        
+    ext = mimetypes.guess_extension(file.content_type)
+    if not ext:
+        ext = ".jpg"
+        
+    filename = f"{uuid.uuid4()}{ext}"
+    
+    file_bytes = await file.read()
+    
+    try:
+        # Supabase Python client expects bytes or file-like object
+        res = supabase.storage.from_("BiteNowImage").upload(
+            file=file_bytes,
+            path=filename,
+            file_options={"content-type": file.content_type}
+        )
+        
+        url = supabase.storage.from_("BiteNowImage").get_public_url(filename)
+        return {"image_url": url}
+    except Exception as e:
+        print(f"[ERROR] Supabase upload error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload image to storage")
 
 @router.get("", response_model=List[UserSchema])
 async def get_staff(

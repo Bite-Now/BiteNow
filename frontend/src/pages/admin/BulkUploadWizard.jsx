@@ -25,6 +25,7 @@ const BulkUploadWizard = ({ canteen, onClose, onSuccess }) => {
           const name = row.name || row.Name || row.item_name || '';
           const priceStr = row.price || row.Price || '0';
           const description = row.description || row.Description || '';
+          const image_url = row.image_url || row.Image || row['Image link'] || row.image || row.image_link || '';
           const price = parseFloat(priceStr.toString().replace(/[^0-9.]/g, '')) || 0;
           
           let status = 'OK';
@@ -34,7 +35,7 @@ const BulkUploadWizard = ({ canteen, onClose, onSuccess }) => {
             status = 'Warn';
           }
 
-          return { name, price, description, status };
+          return { name, price, description, image_url, status };
         });
 
         setParsedData(cleaned);
@@ -103,7 +104,7 @@ const BulkUploadWizard = ({ canteen, onClose, onSuccess }) => {
         description: item.description,
         price: item.price,
         category: item.category,
-        image_url: null,
+        image_url: item.image_url || null,
         is_available: true,
         is_veg: true // Assuming true for bulk upload MVP
       }));
