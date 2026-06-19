@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
 
-from app.modules.auth.schemas import UserSchema
+from app.modules.auth.schemas import UserSchema, UserUpdate
 from app.core.dependencies import get_current_user, get_current_user_clerk_id
 from app.modules.auth.models import User
 from app.core.database import get_db
@@ -12,6 +12,21 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.get("/me", response_model=UserSchema)
 async def get_me(user: User = Depends(get_current_user)):
+    return user
+
+@router.patch("/me", response_model=UserSchema)
+async def update_me(
+    data: UserUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if data.full_name is not None:
+        user.full_name = data.full_name
+    if data.phone is not None:
+        user.phone = data.phone
+    
+    await db.commit()
+    await db.refresh(user)
     return user
 
 class SyncUserRequest(BaseModel):

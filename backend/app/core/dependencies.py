@@ -37,6 +37,42 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database schema unavailable or connection failed")
     
     if not user:
+        from app.core.clerk import clerk_client
+        try:
+            clerk_user = clerk_client.users.get(user_id=clerk_id)
+            if clerk_user and clerk_user.email_addresses:
+                # Find the primary email
+                email = clerk_user.email_addresses[0].email_address
+                result = await db.execute(select(User).where(User.email == email))
+                existing = result.scalars().first()
+                
+                if existing:
+                    # Update their Clerk ID to the new one regardless of what it was before.
+                    # This handles pending invites as well as deleted/recreated Clerk accounts.
+                    existing.clerk_user_id = clerk_id
+                    existing.is_active = True
+                    await db.commit()
+                    user = existing
+                else:
+                    # New signup! Create the user in the database.
+                    first = getattr(clerk_user, "first_name", "") or ""
+                    last = getattr(clerk_user, "last_name", "") or ""
+                    full_name = f"{first} {last}".strip() or "New Student"
+                    
+                    new_user = User(
+                        clerk_user_id=clerk_id,
+                        email=email,
+                        full_name=full_name,
+                        role="STUDENT",
+                        is_active=True
+                    )
+                    db.add(new_user)
+                    await db.commit()
+                    user = new_user
+        except Exception as e:
+            print(f"[ERROR] Fallback clerk user fetch failed: {e}")
+
+    if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found in database")
         
     if not user.is_active:

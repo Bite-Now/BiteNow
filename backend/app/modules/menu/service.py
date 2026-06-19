@@ -51,6 +51,8 @@ class MenuService:
 
     # Owner Methods
     def _verify_owner(self, current_user: User, canteen_id: UUID):
+        if current_user.role == "ADMIN":
+            return
         if not current_user.canteen_id or current_user.canteen_id != canteen_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only modify your own canteen")
 

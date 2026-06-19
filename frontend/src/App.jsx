@@ -15,6 +15,10 @@ import CanteenSettings from './pages/settings/CanteenSettings';
 import Unauthorized from './pages/Unauthorized';
 import MockPayment from './pages/student/MockPayment';
 import MainLayout from './components/layout/MainLayout';
+import AdminLayout from './layouts/AdminLayout';
+import AdminSettings from './pages/admin/Settings';
+import VendorRequests from './pages/admin/VendorRequests';
+import AdminCanteens from './pages/admin/AdminCanteens';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleRedirect from './components/RoleRedirect';
 import { AuthProvider } from './context/AuthContext';
@@ -30,7 +34,6 @@ import VendorStaff from './pages/vendor/VendorStaff';
 import StaffDashboard from './pages/StaffDashboard';
 
 // Dummy components for missing dashboards to satisfy router
-const AdminDashboard = () => <div className="p-8 text-white">Admin Dashboard</div>;
 
 function App() {
   
@@ -89,7 +92,12 @@ function App() {
         </Route>
 
         {/* Protected Routes - ADMIN */}
-        <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminLayout /></ProtectedRoute>}>
+          <Route path="/admin" element={<RoleRedirect />} />
+          <Route path="/admin/vendor-requests" element={<VendorRequests />} />
+          <Route path="/admin/canteens" element={<AdminCanteens />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
+        </Route>
 
         {/* Shared Protected Routes */}
         <Route element={<ProtectedRoute allowedRoles={['STUDENT', 'STAFF', 'OWNER', 'ADMIN']}><MainLayout /></ProtectedRoute>}>

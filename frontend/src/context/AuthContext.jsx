@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useUser, useClerk } from '@clerk/clerk-react';
 import api from '../services/api';
 
 export const AuthContext = createContext({
@@ -12,6 +12,7 @@ export const AuthContext = createContext({
 
 export const AuthProvider = ({ children }) => {
   const { isLoaded, isSignedIn } = useUser();
+  const { signOut } = useClerk();
   const [currentUser, setCurrentUser] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,11 @@ export const AuthProvider = ({ children }) => {
       console.error("Failed to fetch user from /auth/me:", error);
       setCurrentUser(null);
       setRole(null);
+      // If the backend says the user is not found but Clerk thinks we are signed in,
+      // force a sign out to prevent infinite redirect loops.
+      if (error.response && (error.response.status === 404 || error.response.status === 401)) {
+        signOut();
+      }
     } finally {
       setLoading(false);
     }
