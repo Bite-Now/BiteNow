@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { dashboardStats, payoutHistory } from '../../data/mockVendorData';
+
 import GoldenGlowButton from '../../components/ui/GoldenGlowButton';
 import { getDashboardStats } from '../../services/ordersApi';
 
 const VendorEarnings = () => {
-    const [timeframe, setTimeframe] = useState('Monthly');
+    const [timeframe, setTimeframe] = useState('Weekly');
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -28,7 +28,7 @@ const VendorEarnings = () => {
         fetchStats();
     }, []);
 
-    const chartData = dashboardData ? (timeframe === 'Monthly' ? dashboardData.monthly_data : dashboardData.yearly_data) : [];
+    const chartData = dashboardData ? (timeframe === 'Weekly' ? dashboardData.weekly_data : dashboardData.monthly_data) : [];
     return (
         <div className="flex flex-col gap-6 w-full pb-32 pt-6 px-4 relative">
 
@@ -48,7 +48,9 @@ const VendorEarnings = () => {
                 <div className="flex justify-between items-start z-10 ">
                     <div>
                         <p className="text-on-surface-variant text-base font-bold">This Month's Earnings</p>
-                        <h2 className="text-on-surface font-display-lg font-bold mt-1">{dashboardStats.earnings}</h2>
+                        <h2 className="text-on-surface font-display-lg font-bold mt-1">
+                            {loading ? '...' : (dashboardData?.earnings || '₹0')}
+                        </h2>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                         <span className="material-symbols-outlined text-[28px]">account_balance_wallet</span>
@@ -77,8 +79,8 @@ const VendorEarnings = () => {
                         value={timeframe}
                         onChange={(e) => setTimeframe(e.target.value)}
                     >
+                        <option value="Weekly">Weekly</option>
                         <option value="Monthly">Monthly</option>
-                        <option value="Yearly">Yearly</option>
                     </select>
                 </div>
 
@@ -93,7 +95,7 @@ const VendorEarnings = () => {
                         </div>
                     ) : dashboardData && (
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
@@ -104,8 +106,8 @@ const VendorEarnings = () => {
                                         <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} interval={0} />
+                                <YAxis axisLine={{ stroke: '#334155' }} tickLine={false} tick={false} width={10} />
                                 <Tooltip
                                     contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#f8fafc' }}
                                     itemStyle={{ color: '#f8fafc' }}

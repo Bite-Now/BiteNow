@@ -65,4 +65,4 @@ class DashboardStatsResponse(BaseModel):
     batching_efficiency: str
     top_items: List[TopItem]
     monthly_data: List[TrendDataPoint]
-    yearly_data: List[TrendDataPoint]
+    weekly_data: List[TrendDataPoint]
