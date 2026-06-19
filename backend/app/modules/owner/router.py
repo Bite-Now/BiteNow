@@ -257,6 +257,40 @@ async def deactivate_staff(
     return {"message": "Staff deactivated"}
 
 
+@router.post("/{staff_id}/resend")
+async def resend_invitation(
+    staff_id: UUID,
+    owner: User = Depends(require_owner),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(User).join(StaffAssignment)
+        .where(User.id == staff_id, StaffAssignment.canteen_id == owner.canteen_id)
+    )
+    staff = result.scalars().first()
+
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff not found")
+
+    if staff.is_active or not staff.clerk_user_id.startswith("pending_"):
+        raise HTTPException(status_code=400, detail="Staff is already active. Cannot resend invitation.")
+
+    try:
+        clerk_client.invitations.create(
+            request={
+                "email_address": staff.email,
+                "public_metadata": {
+                    "role": "STAFF",
+                    "canteen_id": str(owner.canteen_id)
+                }
+            }
+        )
+    except Exception as clerk_err:
+        logger.error(f"Clerk invitation resend failed: {clerk_err}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to resend invitation via Clerk")
+
+    return {"message": "Invitation resent successfully"}
+
 @router.delete("/{staff_id}")
 async def remove_staff(
     staff_id: UUID,
@@ -274,15 +308,23 @@ async def remove_staff(
     if not assignment:
         raise HTTPException(status_code=404, detail="Staff assignment not found")
 
-    # Find user to delete from clerk if exists
+    # Find user
     user_result = await db.execute(select(User).where(User.id == staff_id))
     staff_user = user_result.scalars().first()
 
     clerk_user_id = staff_user.clerk_user_id if staff_user else None
 
+    # Always delete the assignment
     await db.delete(assignment)
+    
     if staff_user:
-        await db.delete(staff_user)
+        if clerk_user_id and clerk_user_id.startswith("pending_"):
+            # Pending user with no activity can be safely deleted
+            await db.delete(staff_user)
+        else:
+            # Active user should be demoted, not deleted
+            staff_user.role = "CUSTOMER"
+            staff_user.canteen_id = None
 
     try:
         await db.commit()
@@ -291,12 +333,20 @@ async def remove_staff(
         logger.error(f"Failed to remove staff {staff_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to remove staff member")
 
-    # Only touch Clerk AFTER the DB transaction has successfully committed, so a
-    # failed commit never leaves us with a deleted Clerk account and a live DB row.
+    # Only touch Clerk AFTER the DB transaction has successfully committed
     if clerk_user_id:
         try:
-            clerk_client.users.delete(user_id=clerk_user_id)
+            if clerk_user_id.startswith("pending_"):
+                # Can't delete pending user directly by ID from Clerk if it doesn't exist,
+                # but we can try just in case, or revoke invitation.
+                pass
+            else:
+                # For active user, we should update their public metadata to remove role
+                clerk_client.users.update(
+                    user_id=clerk_user_id,
+                    request={"public_metadata": {}}
+                )
         except Exception as e:
-            logger.error(f"Failed to delete clerk user {clerk_user_id}: {e}", exc_info=True)
+            logger.error(f"Failed to update clerk user {clerk_user_id}: {e}", exc_info=True)
 
     return {"message": "Staff removed successfully"}

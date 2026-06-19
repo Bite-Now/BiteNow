@@ -63,6 +63,16 @@ const VendorStaff = () => {
         }
     };
 
+    const handleResend = async (id) => {
+        try {
+            await api.post(`/owner/staff/${id}/resend`);
+            showToast('Invitation resent successfully!');
+        } catch (error) {
+            console.error('Failed to resend invitation:', error);
+            showToast('Failed to resend invitation', 'error');
+        }
+    };
+
     return (
         <div className="flex flex-col gap-6 w-full pb-32 pt-6 px-4 relative">
             {/* Toast Notification */}
@@ -163,6 +173,7 @@ const VendorStaff = () => {
                                     <GoldenGlowButton
                                         variant="neutral"
                                         className="flex-1 py-2 text-sm h-10"
+                                        onClick={() => handleResend(member.id)}
                                     >
                                         Resend Link
                                     </GoldenGlowButton>
