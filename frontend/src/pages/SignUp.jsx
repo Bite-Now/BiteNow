@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { SignUp as ClerkSignUp } from '@clerk/clerk-react';
+import api from '../services/api';
 import { Link } from 'react-router-dom';
 import GlassModal from '../components/ui/GlassModal';
 import GlassInput from '../components/ui/GlassInput';
@@ -7,12 +8,26 @@ import GlassButton from '../components/ui/GlassButton';
 
 const SignUp = () => {
     const [showVendorModal, setShowVendorModal] = useState(false);
-    const [vendorData, setVendorData] = useState({ name: '', email: '', phone: '', canteen: '' });
+    const [vendorData, setVendorData] = useState({ name: '', email: '', phone: '', canteen: '', location: '' });
 
-    const handleVendorRequest = (e) => {
+    const handleVendorRequest = async (e) => {
         e.preventDefault();
-        console.log('Vendor Request Submitted:', vendorData);
-        setShowVendorModal(false);
+        try {
+            await api.post('/vendor/apply', {
+                full_name: vendorData.name,
+                email: vendorData.email,
+                canteen_name: vendorData.canteen,
+                location: vendorData.location,
+                phone: vendorData.phone
+            });
+            console.log('Vendor Request Submitted Successfully');
+            setShowVendorModal(false);
+            setVendorData({ name: '', email: '', phone: '', canteen: '', location: '' });
+            alert("Application submitted successfully!");
+        } catch (error) {
+            console.error('Failed to submit vendor request:', error);
+            alert("Failed to submit application. Please try again.");
+        }
     };
 
     return (
@@ -67,6 +82,12 @@ const SignUp = () => {
                         required 
                         value={vendorData.canteen}
                         onChange={(e) => setVendorData({...vendorData, canteen: e.target.value})}
+                    />
+                    <GlassInput 
+                        label="Location" 
+                        required 
+                        value={vendorData.location}
+                        onChange={(e) => setVendorData({...vendorData, location: e.target.value})}
                     />
                     <div className="pt-2">
                         <GlassButton type="submit">

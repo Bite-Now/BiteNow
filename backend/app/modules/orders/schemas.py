@@ -16,6 +16,7 @@ class OrderCreateRequest(BaseModel):
 class OrderItemResponse(BaseModel):
     id: UUID
     menu_item_id: UUID
+    menu_item_name: Optional[str] = None
     quantity: int
     unit_price: Decimal
 
@@ -25,6 +26,7 @@ class OrderResponse(BaseModel):
     id: UUID
     student_id: UUID
     canteen_id: UUID
+    canteen_name: Optional[str] = None
     order_number: Optional[int] = None
     status: str
     total_amount: Decimal
@@ -63,4 +65,4 @@ class DashboardStatsResponse(BaseModel):
     batching_efficiency: str
     top_items: List[TopItem]
     monthly_data: List[TrendDataPoint]
-    yearly_data: List[TrendDataPoint]
+    weekly_data: List[TrendDataPoint]

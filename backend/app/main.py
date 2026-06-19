@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.modules.auth.router import router as auth_router
 from app.modules.vendor.router import router as vendor_router
-from app.modules.owner.router import router as owner_router
+from app.modules.owner.router import router as owner_router, canteen_router as owner_canteen_router
 from app.modules.admin.router import router as admin_router
 from app.modules.webhooks.router import router as webhook_router
 from app.modules.menu.router import router as menu_router
@@ -28,6 +28,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(vendor_router)
 app.include_router(owner_router)
+app.include_router(owner_canteen_router)
 app.include_router(admin_router)
 app.include_router(webhook_router)
 app.include_router(menu_router)
@@ -46,3 +47,19 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi import Request
+import logging
+
+logger = logging.getLogger("uvicorn.error")
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.error(f"422 Validation Error: {exc.errors()}")
+    logger.error(f"Body: {await request.body()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
+    )

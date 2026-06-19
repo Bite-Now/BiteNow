@@ -60,3 +60,10 @@ export const markNotificationRead = async (notificationId) => {
     const response = await api.patch(`/notifications/${notificationId}/read`);
     return response.data;
 };
+
+export const deleteBulkNotifications = async (notificationIds) => {
+    const response = await api.delete('/notifications/bulk', {
+        data: notificationIds
+    });
+    return response.data;
+};

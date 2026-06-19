@@ -43,7 +43,9 @@ export const getCanteenMenu = async (canteenId) => {
  */
 export const createMenuItem = async (canteenId, payload) => {
   try {
-    const response = await api.post(`/owner/menu?canteen_id=${canteenId}`, payload);
+    const response = await api.post(`/owner/canteens/${canteenId}/menu`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   } catch (error) {
     console.error(`Error creating menu item for canteen ${canteenId}:`, error);
@@ -96,7 +98,9 @@ export const deleteMenuItem = async (itemId) => {
  */
 export const createDailySpecial = async (canteenId, payload) => {
   try {
-    const response = await api.post(`/owner/specials?canteen_id=${canteenId}`, payload);
+    const response = await api.post(`/owner/canteens/${canteenId}/specials`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   } catch (error) {
     console.error(`Error creating daily special for canteen ${canteenId}:`, error);

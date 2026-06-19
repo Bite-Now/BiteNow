@@ -28,10 +28,27 @@ async def clerk_webhook(
         return {"message": "Ignored"}
         
     if event_type == "user.created":
-        # Check if already exists (Admin flow creates via API)
+        # First, check if a pending invitation exists for this email
+        email = user_data.get("email_addresses", [{}])[0].get("email_address", "")
+        existing_by_email = await db.execute(select(User).where(User.email == email))
+        pending_user = existing_by_email.scalars().first()
+
+        if pending_user and pending_user.clerk_user_id.startswith("pending_"):
+            # Update the pending user with real Clerk ID and activate them
+            first_name = user_data.get("first_name", "")
+            last_name = user_data.get("last_name", "")
+            
+            pending_user.clerk_user_id = clerk_id
+            pending_user.full_name = f"{first_name} {last_name}".strip()
+            pending_user.is_active = True
+            
+            # They already have the STAFF role and canteen_id from the invitation logic
+            await db.commit()
+            return {"message": "Pending user activated"}
+
+        # If not pending, check if they exist by clerk_id (Admin flow creates via API)
         result = await db.execute(select(User).where(User.clerk_user_id == clerk_id))
         if not result.scalars().first():
-            email = user_data.get("email_addresses", [{}])[0].get("email_address", "")
             first_name = user_data.get("first_name", "")
             last_name = user_data.get("last_name", "")
             

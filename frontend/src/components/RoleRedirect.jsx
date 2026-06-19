@@ -10,7 +10,7 @@ const RoleRedirect = () => {
     if (loading) return;
 
     if (!isAuthenticated) {
-      navigate('/');
+      navigate('/login');
       return;
     }
 

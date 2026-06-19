@@ -13,6 +13,7 @@ class User(Base):
     full_name = Column(Text, nullable=True)
     role = Column(Text, nullable=False, default="STUDENT")
     canteen_id = Column(UUID(as_uuid=True), ForeignKey("canteens.id"), nullable=True)
+    phone = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -24,6 +25,8 @@ class Canteen(Base):
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     name = Column(Text, nullable=False)
     slug = Column(Text, unique=True, nullable=False)
+    description = Column(Text, nullable=True)
+    image_url = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     is_open = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -36,6 +39,7 @@ class VendorApplication(Base):
     full_name = Column(Text, nullable=False)
     email = Column(Text, nullable=False)
     canteen_name = Column(Text, nullable=False)
+    location = Column(Text, nullable=True) # Added for canteen location
     phone = Column(Text, nullable=False)
     status = Column(Text, default="PENDING")  # PENDING, APPROVED, REJECTED
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -68,6 +72,15 @@ class Wallet(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
     monthly_budget_limit = Column(Integer, default=5000, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+class AdminSettings(Base):
+    __tablename__ = "admin_settings"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
+    notification_matrix = Column(JSONB, default={"email": True, "sms": False}, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

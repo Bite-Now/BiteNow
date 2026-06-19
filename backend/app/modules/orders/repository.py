@@ -141,6 +141,20 @@ class OrderRepository:
         await self.session.commit()
         return notification
 
+    async def get_student_name(self, student_id: UUID) -> str:
+        from app.modules.auth.models import User
+        stmt = select(User.full_name).where(User.id == student_id)
+        result = await self.session.execute(stmt)
+        return result.scalar() or "A student"
+
+    async def get_canteen_staff_and_owner_ids(self, canteen_id: UUID) -> List[UUID]:
+        from app.modules.auth.models import User, Canteen
+        stmt = select(User.id).outerjoin(Canteen, Canteen.owner_id == User.id).where(
+            (User.canteen_id == canteen_id) | (Canteen.id == canteen_id)
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
     async def get_notifications(self, user_id: UUID):
         from .models import Notification
         stmt = select(Notification).where(Notification.user_id == user_id).order_by(Notification.created_at.desc())
@@ -156,6 +170,16 @@ class OrderRepository:
             notification.is_read = True
             await self.session.commit()
         return notification
+
+    async def delete_notifications(self, notification_ids: list[UUID], user_id: UUID):
+        from .models import Notification
+        from sqlalchemy import delete
+        stmt = delete(Notification).where(
+            Notification.id.in_(notification_ids),
+            Notification.user_id == user_id
+        )
+        await self.session.execute(stmt)
+        await self.session.commit()
 
     async def auto_collect_stale_orders(self):
         from datetime import datetime, timedelta, timezone
@@ -173,3 +197,5 @@ class OrderRepository:
         )
         await self.session.execute(stmt)
         await self.session.commit()
+
+

@@ -16,7 +16,7 @@ class AnalyticsService:
 
     async def get_vendor_dashboard_stats(self, canteen_id: UUID) -> Dict[str, Any]:
         # 1. Total Earnings & Orders Completed
-        completed_statuses = ['READY', 'COMPLETED', 'COLLECTED']
+        completed_statuses = ['COMPLETED', 'COLLECTED']
         stmt_earnings = select(
             func.sum(Order.total_amount).label('total_earnings'),
             func.count(Order.id).label('orders_completed')
@@ -80,40 +80,47 @@ class AnalyticsService:
             for row in res_top_items.all()
         ]
 
-        # 5. Trend Chart Data - Monthly (Last 7 days)
-        # Note: We simulate "Monthly" as daily data for the current month/last 7 days to match UI trends
+        # 5. Trend Chart Data - Weekly (4 weeks of the current month)
         today = datetime.now()
-        monthly_data = []
-        for i in range(6, -1, -1):
-            target_date = today - timedelta(days=i)
-            start_of_day = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
-            end_of_day = target_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        weekly_data = []
+        
+        # Define week boundaries: 1-7, 8-14, 15-21, 22-end
+        _, last_day = calendar.monthrange(today.year, today.month)
+        week_ranges = [
+            (1, 7, "Week 1"),
+            (8, 14, "Week 2"),
+            (15, 21, "Week 3"),
+            (22, last_day, "Week 4")
+        ]
+        
+        for start_d, end_d, week_name in week_ranges:
+            start_of_week = today.replace(day=start_d, hour=0, minute=0, second=0, microsecond=0)
+            end_of_week = today.replace(day=end_d, hour=23, minute=59, second=59, microsecond=999999)
             
-            stmt_day = select(
+            stmt_week = select(
                 func.sum(Order.total_amount).label('earnings'),
                 func.count(Order.id).label('orders')
             ).where(
                 Order.canteen_id == canteen_id,
                 Order.status.in_(completed_statuses),
-                Order.created_at >= start_of_day,
-                Order.created_at <= end_of_day
+                Order.created_at >= start_of_week,
+                Order.created_at <= end_of_week
             )
-            res_day = await self.db.execute(stmt_day)
-            day_row = res_day.first()
+            res_week = await self.db.execute(stmt_week)
+            week_row = res_week.first()
             
-            monthly_data.append({
-                "name": target_date.strftime("%a"), # e.g. Mon, Tue
-                "earnings": float(day_row.earnings or 0),
-                "orders": day_row.orders or 0
+            weekly_data.append({
+                "name": week_name,
+                "earnings": float(week_row.earnings or 0),
+                "orders": week_row.orders or 0
             })
 
-        # 6. Trend Chart Data - Yearly (Last 6 months)
-        yearly_data = []
-        for i in range(5, -1, -1):
-            target_month = today - relativedelta(months=i)
-            start_of_month = target_month.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            _, last_day = calendar.monthrange(target_month.year, target_month.month)
-            end_of_month = target_month.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
+        # 6. Trend Chart Data - Monthly (Jan to Dec of current year)
+        monthly_data = []
+        for month in range(1, 13):
+            start_of_month = today.replace(month=month, day=1, hour=0, minute=0, second=0, microsecond=0)
+            _, month_last_day = calendar.monthrange(today.year, month)
+            end_of_month = today.replace(month=month, day=month_last_day, hour=23, minute=59, second=59, microsecond=999999)
             
             stmt_month = select(
                 func.sum(Order.total_amount).label('earnings'),
@@ -127,8 +134,8 @@ class AnalyticsService:
             res_month = await self.db.execute(stmt_month)
             month_row = res_month.first()
             
-            yearly_data.append({
-                "name": target_month.strftime("%b"), # e.g. Jan, Feb
+            monthly_data.append({
+                "name": start_of_month.strftime("%b"), # Jan, Feb, etc.
                 "earnings": float(month_row.earnings or 0),
                 "orders": month_row.orders or 0
             })
@@ -140,7 +147,7 @@ class AnalyticsService:
             "batching_efficiency": batching_efficiency,
             "top_items": top_items,
             "monthly_data": monthly_data,
-            "yearly_data": yearly_data
+            "weekly_data": weekly_data
         }
 
 from fastapi import Depends

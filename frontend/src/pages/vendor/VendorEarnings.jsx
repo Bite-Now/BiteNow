@@ -1,15 +1,41 @@
-import React from 'react';
-import { dashboardStats, payoutHistory } from '../../data/mockVendorData';
+import React, { useState, useEffect } from 'react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
 import GoldenGlowButton from '../../components/ui/GoldenGlowButton';
+import { getDashboardStats } from '../../services/ordersApi';
 
 const VendorEarnings = () => {
+    const [timeframe, setTimeframe] = useState('Weekly');
+    const [dashboardData, setDashboardData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                setLoading(true);
+                const data = await getDashboardStats();
+                setDashboardData(data);
+                setError(null);
+            } catch (err) {
+                console.error("Failed to load dashboard stats", err);
+                setError("Failed to load dashboard stats");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
+    const chartData = dashboardData ? (timeframe === 'Weekly' ? dashboardData.weekly_data : dashboardData.monthly_data) : [];
     return (
         <div className="flex flex-col gap-6 w-full pb-32 pt-6 px-4 relative">
-            
+
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="font-display-sm text-on-surface">Data & Reports</h1>
+                    <h1 className="font-display-md font-bold text-on-surface">Data & Reports</h1>
                     <p className="text-on-surface-variant text-sm">Financial overview and exports</p>
                 </div>
             </div>
@@ -18,74 +44,81 @@ const VendorEarnings = () => {
             <div className="bg-surface-container rounded-2xl p-6 shadow-sm border border-outline-variant/20 flex flex-col gap-4 relative">
                 {/* Decorative background glow */}
                 <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
-                
-                <div className="flex justify-between items-start z-10">
+
+                <div className="flex justify-between items-start z-10 ">
                     <div>
-                        <p className="text-on-surface-variant text-sm font-medium">Available Balance</p>
-                        <h2 className="text-on-surface font-display-md mt-1">{dashboardStats.earnings}</h2>
+                        <p className="text-on-surface-variant text-base font-bold">This Month's Earnings</p>
+                        <h2 className="text-on-surface font-display-lg font-bold mt-1">
+                            {loading ? '...' : (dashboardData?.earnings || '₹0')}
+                        </h2>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                         <span className="material-symbols-outlined text-[28px]">account_balance_wallet</span>
                     </div>
                 </div>
-
-                <div className="flex gap-3 z-10 mt-2">
-                    <GoldenGlowButton className="w-full">
-                        Withdraw Funds
-                    </GoldenGlowButton>
-                </div>
             </div>
 
-            
+
             <hr className="border-outline-variant/20 my-2" />
 
-            {/* Data Export UI */}
-            <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2 px-1">
-                    <span className="material-symbols-outlined text-primary text-xl">download</span>
-                    <h2 className="text-on-surface font-bold text-lg">Export Reports</h2>
+            {/* Trend Chart */}
+            <div className="bg-surface-container rounded-[24px] p-5 shadow-sm border border-outline-variant/20 flex flex-col gap-4">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-primary"></div>
+                            <span className="text-xs text-on-surface-variant">Earnings</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-[#f59e0b]"></div>
+                            <span className="text-xs text-on-surface-variant">Orders</span>
+                        </div>
+                    </div>
+                    <select
+                        className="bg-surface text-on-surface border border-outline-variant rounded-xl px-3 py-1 text-sm outline-none"
+                        value={timeframe}
+                        onChange={(e) => setTimeframe(e.target.value)}
+                    >
+                        <option value="Weekly">Weekly</option>
+                        <option value="Monthly">Monthly</option>
+                    </select>
                 </div>
 
-                <div className="bg-surface-container rounded-2xl p-5 shadow-sm border border-outline-variant/20 flex flex-col gap-4">
-                    {/* Filters */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs text-on-surface-variant font-medium ml-1">Date Range</label>
-                            <select className="bg-surface border border-outline-variant/50 rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary">
-                                <option>This Month</option>
-                                <option>Last Month</option>
-                                <option>Last 3 Months</option>
-                                <option>This Year</option>
-                            </select>
+                <div className="h-[220px] w-full mt-2">
+                    {loading ? (
+                        <div className="flex justify-center items-center h-full">
+                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                         </div>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs text-on-surface-variant font-medium ml-1">Category</label>
-                            <select className="bg-surface border border-outline-variant/50 rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary">
-                                <option>All Sales</option>
-                                <option>Payouts Only</option>
-                                <option>Item Performance</option>
-                            </select>
+                    ) : error ? (
+                        <div className="flex justify-center items-center h-full text-error text-sm">
+                            {error}
                         </div>
-                    </div>
-
-                    {/* Export Buttons */}
-                    <div className="flex gap-3 mt-2">
-                        <div className="flex-1">
-                            <GoldenGlowButton variant="neutral" className="w-full">
-                                <span className="material-symbols-outlined text-lg mr-1">description</span>
-                                CSV
-                            </GoldenGlowButton>
-                        </div>
-                        <div className="flex-1">
-                            <GoldenGlowButton variant="neutral" className="w-full">
-                                <span className="material-symbols-outlined text-lg mr-1">picture_as_pdf</span>
-                                PDF
-                            </GoldenGlowButton>
-                        </div>
-                    </div>
+                    ) : dashboardData && (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                                    </linearGradient>
+                                    <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} interval={0} />
+                                <YAxis axisLine={{ stroke: '#334155' }} tickLine={false} tick={false} width={10} />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#f8fafc' }}
+                                    itemStyle={{ color: '#f8fafc' }}
+                                />
+                                <Area type="monotone" dataKey="earnings" stroke="#22c55e" strokeWidth={3} fillOpacity={1} fill="url(#colorEarnings)" />
+                                <Area type="monotone" dataKey="orders" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#colorOrders)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    )}
                 </div>
             </div>
-
         </div>
     );
 };

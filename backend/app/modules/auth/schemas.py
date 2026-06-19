@@ -5,11 +5,12 @@ from uuid import UUID
 
 class UserSchema(BaseModel):
     id: UUID
-    clerk_user_id: str
+    clerk_user_id: Optional[str]
     email: EmailStr
     full_name: Optional[str]
     role: str
     canteen_id: Optional[UUID]
+    phone: Optional[str]
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -17,10 +18,21 @@ class UserSchema(BaseModel):
     class Config:
         from_attributes = True
 
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+
+class CanteenUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    is_open: Optional[bool] = None
+
 class VendorApplicationCreate(BaseModel):
     full_name: str
     email: EmailStr
     canteen_name: str
+    location: str
     phone: str
 
 class VendorApplicationSchema(VendorApplicationCreate):

@@ -68,25 +68,61 @@ class OrderService:
         )
         if not order:
             raise HTTPException(status_code=500, detail="Failed to create order")
+            
+        # Notify staff and vendor
+        student_name = await self.order_repo.get_student_name(student_id)
+        title = "New Order!"
+        message = f"A new order has arrived from {student_name}."
+        
+        target_user_ids = await self.order_repo.get_canteen_staff_and_owner_ids(request.canteen_id)
+        for uid in target_user_ids:
+            await self.order_repo.create_notification(uid, title, message)
+            
         return order
 
     async def auto_collect_stale_orders(self):
         await self.order_repo.auto_collect_stale_orders()
 
+    async def _populate_names(self, orders: List[Order]) -> List[Order]:
+        canteen_cache = {}
+        item_cache = {}
+        for order in orders:
+            if order.canteen_id not in canteen_cache:
+                canteen = await self.menu_repo.get_canteen_by_id(order.canteen_id)
+                canteen_cache[order.canteen_id] = canteen.name if canteen else "Unknown Canteen"
+            order.canteen_name = canteen_cache[order.canteen_id]
+            
+            for item in getattr(order, 'items', []):
+                if item.menu_item_id not in item_cache:
+                    menu_item = await self.menu_repo.get_menu_item_by_id(item.menu_item_id)
+                    if not menu_item:
+                        special = await self.menu_repo.get_daily_special_by_id(item.menu_item_id)
+                        item_cache[item.menu_item_id] = special.name if special else "Unknown Item"
+                    else:
+                        item_cache[item.menu_item_id] = menu_item.name
+                item.menu_item_name = item_cache[item.menu_item_id]
+        return orders
+
     async def get_student_orders(self, student_id: UUID) -> List[Order]:
         await self.auto_collect_stale_orders()
-        return await self.order_repo.get_orders_by_student(student_id)
+        orders = await self.order_repo.get_orders_by_student(student_id)
+        return await self._populate_names(orders)
 
     async def get_staff_orders(self, canteen_id: UUID) -> List[Order]:
         await self.auto_collect_stale_orders()
-        return await self.order_repo.get_orders_by_canteen(canteen_id, statuses=["PAID", "READY"])
+        orders = await self.order_repo.get_orders_by_canteen(canteen_id, statuses=["PAID", "READY"])
+        return await self._populate_names(orders)
 
     async def get_owner_orders(self, canteen_id: UUID) -> List[Order]:
         await self.auto_collect_stale_orders()
-        return await self.order_repo.get_orders_by_canteen(canteen_id)
+        orders = await self.order_repo.get_orders_by_canteen(canteen_id)
+        return await self._populate_names(orders)
 
     async def get_order_by_id(self, order_id: UUID) -> Optional[Order]:
-        return await self.order_repo.get_order_by_id(order_id)
+        order = await self.order_repo.get_order_by_id(order_id)
+        if order:
+            await self._populate_names([order])
+        return order
 
     async def mark_ready(self, order_id: UUID) -> Order:
         order = await self.order_repo.update_order_status(order_id, "READY")
@@ -111,3 +147,7 @@ class OrderService:
         if not notification:
             raise HTTPException(status_code=404, detail="Notification not found")
         return notification
+
+    async def delete_notifications(self, notification_ids: List[UUID], user_id: UUID):
+        await self.order_repo.delete_notifications(notification_ids, user_id)
+        return {"success": True, "deleted_count": len(notification_ids)}

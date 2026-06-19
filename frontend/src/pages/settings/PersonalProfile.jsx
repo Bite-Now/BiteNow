@@ -1,14 +1,38 @@
-import React from 'react';
-import { useUser } from '@clerk/clerk-react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
+import api from '../../services/api';
 import GlassInput from '../../components/ui/GlassInput';
 import GoldenGlowButton from '../../components/ui/GoldenGlowButton';
 
 const PersonalProfile = () => {
-    const { user } = useUser();
+    const { currentUser, refreshUser } = useContext(AuthContext);
+    const [fullName, setFullName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = (e) => {
+    useEffect(() => {
+        if (currentUser) {
+            setFullName(currentUser.full_name || '');
+            setPhone(currentUser.phone || '');
+        }
+    }, [currentUser]);
+
+    const handleSave = async (e) => {
         e.preventDefault();
-        // Mock save
+        setIsSaving(true);
+        try {
+            await api.patch('/auth/me', {
+                full_name: fullName,
+                phone: phone
+            });
+            await refreshUser(); // refresh user context
+            alert('Profile updated successfully!');
+        } catch (err) {
+            console.error('Failed to update profile:', err);
+            alert('Failed to update profile.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -19,18 +43,20 @@ const PersonalProfile = () => {
                 <form onSubmit={handleSave} className="flex flex-col gap-5">
                     <GlassInput 
                         label="Full Name" 
-                        defaultValue={user?.firstName ? `${user.firstName} ${user.lastName}` : ''}
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
                     />
 
                     <GlassInput 
                         label="Phone Number" 
                         type="tel" 
-                        defaultValue="" 
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
                     />
                     
                     <div className="pt-6">
-                        <GoldenGlowButton type="submit" className="w-full">
-                            Save Changes
+                        <GoldenGlowButton type="submit" className="w-full" disabled={isSaving}>
+                            {isSaving ? 'Saving...' : 'Save Changes'}
                         </GoldenGlowButton>
                     </div>
                 </form>

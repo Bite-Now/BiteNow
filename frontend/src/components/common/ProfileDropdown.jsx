@@ -104,21 +104,6 @@ const ProfileDropdown = () => {
                                 <span className="font-label-md">Canteen Settings</span>
                             </button>
                         )}
-
-                        <div className="h-[1px] bg-white/5 my-1 mx-2"></div>
-
-                        <button onClick={toggleDarkMode} className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[#2c2c2e] text-white/80 hover:text-white transition-all group cursor-pointer active:scale-95">
-                            <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-[20px] text-white/50 group-hover:text-white transition-colors" style={{ fontVariationSettings: "'wght' 300" }}>
-                                    {isDarkMode ? 'dark_mode' : 'light_mode'}
-                                </span>
-                                <span className="font-label-md">Appearance</span>
-                            </div>
-                            <span className="font-body-sm text-white/40 group-hover:text-white/60 capitalize transition-colors">
-                                {isDarkMode ? 'Dark' : 'Light'}
-                            </span>
-                        </button>
-
                         <div className="h-[1px] bg-white/5 my-1 mx-2"></div>
 
                         <button onClick={() => handleAction('logout')} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-error/20 text-error/90 hover:text-error transition-all group cursor-pointer active:scale-95">

@@ -82,6 +82,9 @@ const Canteen = () => {
     return (
         <div className="font-body-md relative flex flex-col pb-[100px] min-h-screen">
             {/* Top Navigation */}
+
+            {/* Main Content Canvas */}
+            <main className="px-container-margin flex flex-col gap-lg pt-4 pb-12">
             <header className="sticky top-0 z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-md shadow-lg shadow-primary/5 flex justify-between items-center px-container-margin py-md border-b border-outline-variant/10">
                 <button 
                     onClick={() => navigate('/home')}
@@ -94,10 +97,14 @@ const Canteen = () => {
                 </h1>
                 <div className="w-10"></div>
             </header>
-
-            {/* Main Content Canvas */}
-            <main className="px-container-margin flex flex-col gap-lg pt-4 pb-12">
                 
+                {!canteen.is_open && (
+                    <div className="bg-error-container text-on-error-container p-4 rounded-xl text-center shadow-sm -mt-2 mb-2 font-bold flex items-center justify-center gap-2">
+                        <span className="material-symbols-outlined">gpp_maybe</span>
+                        This canteen is currently closed. Orders cannot be placed.
+                    </div>
+                )}
+
                 {/* Specials Carousel */}
                 {specials && specials.length > 0 && (
                     <section>
@@ -106,19 +113,30 @@ const Canteen = () => {
                         </div>
                         <div className="flex overflow-x-auto gap-md no-scrollbar pb-sm snap-x">
                             {specials.map(special => (
-                                <div key={special.id} className="min-w-[280px] w-[280px] md:w-[320px] bg-surface-container-low rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.2)] border border-surface-container-highest snap-start relative flex-shrink-0 group">
+                                <div key={special.id} className={`min-w-[280px] w-[280px] md:w-[320px] bg-surface-container-low rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.2)] border border-surface-container-highest snap-start relative flex-shrink-0 group ${!special.is_available ? 'opacity-60 grayscale-[50%]' : ''}`}>
                                     <div className="h-[160px] bg-surface-variant relative overflow-hidden rounded-t-[12px] m-xs">
-                                        <img src={special.image_url || DEFAULT_IMAGE} alt={special.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        <img src={special.image_url || DEFAULT_IMAGE} alt={special.name} className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!special.is_available ? 'grayscale' : ''}`} />
                                     </div>
                                     <div className="p-md flex flex-col gap-xs">
                                         <div className="flex justify-between items-start">
                                             <h3 className="font-label-md text-label-md text-on-surface">{special.name}</h3>
-                                            <span className="font-label-md text-label-md text-primary-container">₹{special.price}</span>
+                                            <span className={`font-label-md text-label-md ${!special.is_available ? 'text-on-surface-variant line-through' : 'text-primary-container'}`}>₹{special.price}</span>
                                         </div>
                                         <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">{special.description}</p>
-                                        <button onClick={() => addToCart({ ...special, image: special.image_url || DEFAULT_IMAGE }, id)} className="mt-sm w-full bg-surface-bright text-on-surface font-label-md text-label-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors flex justify-center items-center gap-2 border border-outline-variant/30">
-                                            <span className="material-symbols-outlined" data-icon="add">add</span> Add
-                                        </button>
+                                        
+                                        {!special.is_available ? (
+                                            <div className="mt-sm w-full py-2 flex justify-center items-center">
+                                                <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Sold Out</span>
+                                            </div>
+                                        ) : !canteen.is_open ? (
+                                            <div className="mt-sm w-full py-2 flex justify-center items-center">
+                                                <span className="px-3 py-1 rounded text-[12px] font-bold bg-surface-variant text-on-surface-variant uppercase tracking-wider">Closed</span>
+                                            </div>
+                                        ) : (
+                                            <button onClick={() => addToCart({ ...special, image: special.image_url || DEFAULT_IMAGE }, id)} className="mt-sm w-full bg-surface-bright text-on-surface font-label-md text-label-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors flex justify-center items-center gap-2 border border-outline-variant/30">
+                                                <span className="material-symbols-outlined" data-icon="add">add</span> Add
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -165,11 +183,11 @@ const Canteen = () => {
                         <div className="flex gap-4 items-start mt-12">
                             {/* Column 1 */}
                             <div className="flex-1 flex flex-col gap-14">
-                                {col1.map(item => <MenuItem key={item.id} item={item} addToCart={() => addToCart({ ...item, image: item.image_url || DEFAULT_IMAGE }, id)} removeFromCart={() => removeFromCart(item.id)} quantity={cartItems.find(i => i.id === item.id)?.quantity || 0} budgetMode={budgetMode} currentBalance={currentBalance} />)}
+                                {col1.map(item => <MenuItem key={item.id} item={item} addToCart={() => addToCart({ ...item, image: item.image_url || DEFAULT_IMAGE }, id)} removeFromCart={() => removeFromCart(item.id)} quantity={cartItems.find(i => i.id === item.id)?.quantity || 0} budgetMode={budgetMode} currentBalance={currentBalance} canteenOpen={canteen.is_open} />)}
                             </div>
                             {/* Column 2 (Staggered) */}
                             <div className="flex-1 flex flex-col gap-14 mt-12">
-                                {col2.map(item => <MenuItem key={item.id} item={item} addToCart={() => addToCart({ ...item, image: item.image_url || DEFAULT_IMAGE }, id)} removeFromCart={() => removeFromCart(item.id)} quantity={cartItems.find(i => i.id === item.id)?.quantity || 0} budgetMode={budgetMode} currentBalance={currentBalance} />)}
+                                {col2.map(item => <MenuItem key={item.id} item={item} addToCart={() => addToCart({ ...item, image: item.image_url || DEFAULT_IMAGE }, id)} removeFromCart={() => removeFromCart(item.id)} quantity={cartItems.find(i => i.id === item.id)?.quantity || 0} budgetMode={budgetMode} currentBalance={currentBalance} canteenOpen={canteen.is_open} />)}
                             </div>
                         </div>
                     </section>
@@ -185,9 +203,9 @@ const Canteen = () => {
     );
 };
 
-const MenuItem = ({ item, addToCart, removeFromCart, quantity, budgetMode, currentBalance }) => {
+const MenuItem = ({ item, addToCart, removeFromCart, quantity, budgetMode, currentBalance, canteenOpen }) => {
     const isOverBudget = budgetMode && item.price > currentBalance;
-    const isUnavailable = !item.is_available || isOverBudget;
+    const isUnavailable = !item.is_available || isOverBudget || !canteenOpen;
 
     return (
         <div className={`bg-surface-container-lowest border border-surface-container-highest rounded-2xl p-4 pt-14 relative flex flex-col items-center text-center shadow-lg ${isUnavailable ? 'opacity-60 grayscale-[50%]' : 'hover:bg-surface-container-low transition-colors'}`}>

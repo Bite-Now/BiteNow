@@ -43,6 +43,14 @@ async def mock_payment_success(
     from datetime import datetime, timezone
     from app.modules.orders.models import Order as OrderModel
 
+    # 1. Verify canteen is open
+    canteen_result = await db.execute(select(Canteen).where(Canteen.id == request.canteen_id))
+    canteen = canteen_result.scalars().first()
+    if not canteen:
+        raise HTTPException(status_code=404, detail="Canteen not found.")
+    if not canteen.is_open:
+        raise HTTPException(status_code=400, detail="This canteen is currently closed.")
+
     order = await service.create_paid_order(user.id, request)
 
     # Calculate updated monthly spending
@@ -203,7 +211,7 @@ notifications_router = APIRouter(prefix="/notifications", tags=["Notifications"]
 
 @notifications_router.get("", response_model=List[NotificationResponse])
 async def get_my_notifications(
-    user: User = Depends(require_strict_student),
+    user: User = Depends(get_current_user),
     service: OrderService = Depends(get_order_service)
 ):
     return await service.get_notifications(user.id)
@@ -211,7 +219,15 @@ async def get_my_notifications(
 @notifications_router.patch("/{notification_id}/read", response_model=NotificationResponse)
 async def read_notification(
     notification_id: UUID,
-    user: User = Depends(require_strict_student),
+    user: User = Depends(get_current_user),
     service: OrderService = Depends(get_order_service)
 ):
     return await service.mark_notification_read(notification_id, user.id)
+
+@notifications_router.delete("/bulk")
+async def bulk_delete_notifications(
+    notification_ids: List[UUID],
+    user: User = Depends(get_current_user),
+    service: OrderService = Depends(get_order_service)
+):
+    return await service.delete_notifications(notification_ids, user.id)
